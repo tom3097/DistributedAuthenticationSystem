@@ -6,7 +6,7 @@ using System.Threading;
 
 namespace DistributedAuthSystem.Services
 {
-    public class ClientsRepository
+    public class ClientsRepository : IClientsRepository
     {
         #region fields
 

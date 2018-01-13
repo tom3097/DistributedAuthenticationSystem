@@ -11,11 +11,16 @@ namespace DistributedAuthSystem.Controllers
     {
         #region fields
 
-        private static readonly ClientsRepository _repository = new ClientsRepository();
+        private readonly IClientsRepository _repository;
 
         #endregion
 
         #region methods
+
+        public ClientsController(IClientsRepository repository)
+        {
+            _repository = repository;
+        }
 
         [Route("")]
         [HttpGet]

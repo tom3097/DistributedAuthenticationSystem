@@ -11,11 +11,16 @@ namespace DistributedAuthSystem.Controllers
     {
         #region fields
 
-        private static readonly NeighboursRepository _repository = new NeighboursRepository();
+        private readonly INeighboursRepository _repository;
 
         #endregion
 
         #region methods
+
+        public NeighboursController(INeighboursRepository repository)
+        {
+            _repository = repository;
+        }
 
         [Route("")]
         [HttpGet]
