@@ -1,12 +1,12 @@
 ﻿namespace DistributedAuthSystem.Requests
 {
-    public class PostClientReq
+    public class ActivateNewPassListReq
     {
         #region properties
 
-        public int Id { get; set; }
-
         public int Pin { get; set; }
+
+        public string OneTimePassword { get; set; }
 
         #endregion
     }

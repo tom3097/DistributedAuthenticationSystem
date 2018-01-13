@@ -1,10 +1,8 @@
 ﻿using DistributedAuthSystem.Extensions;
 using DistributedAuthSystem.Models;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using System.Web;
 
 namespace DistributedAuthSystem.Services
 {
@@ -199,9 +197,39 @@ namespace DistributedAuthSystem.Services
                 {
                     notFound = false;
 
-                    if (client.Pin == pin && client.ActivatedList.CurrentPassword() == oneTimePassword)
+                    if (client.Pin == pin && client.CanAuthorizeOperation() &&
+                        client.CurrentActivePassword() == oneTimePassword)
                     {
-                        client.ActivatedList.UseCurrentPassword();
+                        client.UseCurrentActivePassword();
+                        return true;
+                    }
+
+                    return false;
+                }
+
+                notFound = true;
+                return false;
+            }
+            finally
+            {
+                _lockSlim.ExitWriteLock();
+            }
+        }
+
+        public bool ActivateNewPassList(int id, int pin, string oneTimePassword, out bool notFound)
+        {
+            _lockSlim.EnterWriteLock();
+            try
+            {
+                Client client;
+                if (_repository.TryGetValue(id, out client))
+                {
+                    notFound = false;
+
+                    if (client.Pin == pin && client.CanActivateNewPassList() &&
+                        client.CurrentActivePassword() == oneTimePassword)
+                    {
+                        client.ActivateNewPassList();
                         return true;
                     }
 

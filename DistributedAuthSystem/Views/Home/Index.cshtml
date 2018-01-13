@@ -4,6 +4,12 @@
 
 <input type="button" id="update-neighbour" value="Update" />
 
+<div id="body-clients">
+    <ul id="clients"></ul>
+</div>
+
+<input type="button" id="update-client" value="Update" />
+
 <form id="saveNeighbourForm"
       method="post">
     <h3>Add new neighbour</h3>
@@ -16,6 +22,20 @@
         <input type="text" name="Url" />
     </p>
     <input type="button" id="save-neighbour" value="Save" />
+</form>
+
+<form id="saveClientForm"
+      method="post">
+    <h3>Add new client</h3>
+    <p>
+        <label for="client-id">Id:</label>
+        <input type="text" name="Id" />
+    </p>
+    <p>
+        <label for="client-pin">Pin:</label>
+        <input type="text" name="Pin" />
+    </p>
+    <input type="button" id="save-client" value="Save" />
 </form>
 
 @section scripts{
@@ -32,6 +52,23 @@
         $('#save-neighbour').click(function () {
             $.post("protected/neighbours",
                 $("#saveNeighbourForm").serialize(), function (data, status, xhr) {
+                },
+                "json"
+            );
+        });
+
+        $('#update-client').click(function () {
+            $.getJSON('public/clients', function (contactsJsonPayload) {
+                $('#clients').empty();
+                $(contactsJsonPayload).each(function (i, item) {
+                    $('#clients').append('<li>' + item.Id + '  ' + item.Pin + '  ' + item.ActivatedList.Passwords + ' ' + item.ActivatedList.CurrentIndex + '</li>');
+                });
+            });
+        });
+
+        $('#save-client').click(function () {
+            $.post("public/clients",
+                $("#saveClientForm").serialize(), function (data, status, xhr) {
                 },
                 "json"
             );

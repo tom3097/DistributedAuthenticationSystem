@@ -1,8 +1,6 @@
 ﻿using DistributedAuthSystem.Models;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Web;
 
 namespace DistributedAuthSystem.Extensions
 {
@@ -22,6 +20,11 @@ namespace DistributedAuthSystem.Extensions
 
         #region methods
 
+        static OneTimePasswordListExt()
+        {
+            _random = new Random();
+        }
+
         private static string RandomString(int length)
         {
             return new string(Enumerable.Repeat(_allowedChars, length)
@@ -40,6 +43,11 @@ namespace DistributedAuthSystem.Extensions
 
         public static string CurrentPassword(this OneTimePasswordList oneTimePasswordList)
         {
+            if (oneTimePasswordList.CurrentIndex == _listSize)
+            {
+                return null;
+            }
+
             return oneTimePasswordList.Passwords[oneTimePasswordList.CurrentIndex];
         }
 
@@ -51,6 +59,16 @@ namespace DistributedAuthSystem.Extensions
             }
 
             oneTimePasswordList.CurrentIndex += 1;
+        }
+
+        public static bool CanAuthorizeOperation(this OneTimePasswordList oneTimePasswordList)
+        {
+            return oneTimePasswordList.CurrentIndex < _listSize - 1;
+        }
+
+        public static bool CanActivateNewPassList(this OneTimePasswordList oneTimePasswordList)
+        {
+            return oneTimePasswordList.CurrentIndex == _listSize - 1;
         }
 
         #endregion

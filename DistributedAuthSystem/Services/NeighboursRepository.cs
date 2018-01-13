@@ -1,9 +1,7 @@
 ﻿using DistributedAuthSystem.Models;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using System.Web;
 
 namespace DistributedAuthSystem.Services
 {
@@ -56,14 +54,20 @@ namespace DistributedAuthSystem.Services
             return success ? neighbour : null;
         }
 
-        public bool PostNeighbour(Neighbour neighbour)
+        public bool PostNeighbour(int id, string url)
         {
             _lockSlim.EnterWriteLock();
             try
             {
-                if (!_repository.ContainsKey(neighbour.Id))
+                if (!_repository.ContainsKey(id))
                 {
-                    _repository.Add(neighbour.Id, neighbour);
+                    Neighbour neighbour = new Neighbour
+                    {
+                        Id = id,
+                        Url = url,
+                        IsSpecial = false
+                    };
+                    _repository.Add(id, neighbour);
                     return true;
                 }
             }

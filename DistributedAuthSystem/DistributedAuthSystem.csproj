@@ -191,6 +191,7 @@
     <Compile Include="Models\Neighbour.cs" />
     <Compile Include="Models\OneTimePasswordList.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Requests\ActivateNewPassListReq.cs" />
     <Compile Include="Requests\AuthorizaOperationReq.cs" />
     <Compile Include="Requests\ChangeClientPinReq.cs" />
     <Compile Include="Requests\PostClientReq.cs" />

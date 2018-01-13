@@ -1,9 +1,5 @@
-﻿using DistributedAuthSystem.Models;
-using DistributedAuthSystem.Requests;
+﻿using DistributedAuthSystem.Requests;
 using DistributedAuthSystem.Services;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Web.Http;
@@ -79,7 +75,7 @@ namespace DistributedAuthSystem.Controllers
 
         [Route("{id:int}/passlist")]
         [HttpGet]
-        public HttpResponseMessage GetClientPassList([FromUri] int id, int pin)
+        public HttpResponseMessage GetClientPassList([FromUri] int id, [FromBody] int pin)
         {
             bool notFound;
             var passwordList = _repository.GetClientPassList(id, pin, out notFound);
@@ -91,11 +87,21 @@ namespace DistributedAuthSystem.Controllers
         [HttpGet]
         public HttpResponseMessage AuthorizeOperation([FromUri] int id, [FromBody] AuthorizaOperationReq request)
         {
-            return Request.CreateResponse(HttpStatusCode.OK);
+            bool notFound;
+            var success = _repository.AuthorizeOperation(id, request.Pin, request.OneTimePassword, out notFound);
+            var statusCode = success ? HttpStatusCode.OK : notFound ? HttpStatusCode.NotFound : HttpStatusCode.Unauthorized;
+            return Request.CreateResponse(statusCode);
         }
 
-
-
+        [Route("{id:int}/activatelist")]
+        [HttpGet]
+        public HttpResponseMessage ActivateNewPassList([FromUri] int id, [FromBody] ActivateNewPassListReq request)
+        {
+            bool notFound;
+            var success = _repository.ActivateNewPassList(id, request.Pin, request.OneTimePassword, out notFound);
+            var statusCode = success ? HttpStatusCode.OK : notFound ? HttpStatusCode.NotFound : HttpStatusCode.Unauthorized;
+            return Request.CreateResponse(statusCode);
+        }
 
         #endregion
     }

@@ -1,8 +1,5 @@
-﻿using DistributedAuthSystem.Models;
+﻿using DistributedAuthSystem.Requests;
 using DistributedAuthSystem.Services;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Web.Http;
@@ -39,11 +36,11 @@ namespace DistributedAuthSystem.Controllers
 
         [Route("")]
         [HttpPost]
-        public HttpResponseMessage PostNeighbour([FromBody] Neighbour neighbour)
+        public HttpResponseMessage PostNeighbour([FromBody] PostNeighbourReq request)
         {
-            var success = _repository.PostNeighbour(neighbour);
+            var success = _repository.PostNeighbour(request.Id, request.Url);
             var statusCode = success ? HttpStatusCode.Created : HttpStatusCode.Conflict;
-            return Request.CreateResponse(statusCode, neighbour);
+            return Request.CreateResponse(statusCode);
         }
 
         [Route("{id:int}")]
