@@ -1,4 +1,5 @@
-﻿using DistributedAuthSystem.Models;
+﻿using DistributedAuthSystem.Extensions;
+using DistributedAuthSystem.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -54,6 +55,166 @@ namespace DistributedAuthSystem.Services
             }
 
             return success ? client : null;
+        }
+
+        public bool PostClient(int id, int pin)
+        {
+            _lockSlim.EnterWriteLock();
+            try
+            {
+                if (!_repository.ContainsKey(id))
+                {
+                    Client client = new Client
+                    {
+                        Id = id,
+                        Pin = pin
+                    };
+                    client.InitializePasswordLists();
+                    _repository.Add(id, client);
+                    return true;
+                }
+            }
+            finally
+            {
+                _lockSlim.ExitWriteLock();
+            }
+
+            return false;
+        }
+
+        public bool DeleteClient(int id, int pin, out bool notFound)
+        {
+            _lockSlim.EnterWriteLock();
+            try
+            {
+                Client client;
+                if (_repository.TryGetValue(id, out client))
+                {
+                    notFound = false;
+
+                    if (client.Pin == pin)
+                    {
+                        _repository.Remove(id);
+                        return true;
+                    }
+
+                    return false;
+                }
+                notFound = true;
+                return false;
+            }
+            finally
+            {
+                _lockSlim.ExitWriteLock();
+            }
+        }
+
+        public bool ChangeClientPin(int id, int currentPin, int newPin, out bool notFound)
+        {
+            _lockSlim.EnterWriteLock();
+            try
+            {
+                Client client;
+                if (_repository.TryGetValue(id, out client))
+                {
+                    notFound = false;
+
+                    if (client.Pin == currentPin)
+                    {
+                        client.Pin = newPin;
+                        return true;
+                    }
+
+                    return false;
+                }
+                notFound = true;
+                return false;
+            }
+            finally
+            {
+                _lockSlim.ExitWriteLock();
+            }
+        }
+
+        public bool AuthenticateClient(int id, int pin, out bool notFound)
+        {
+            _lockSlim.EnterReadLock();
+            try
+            {
+                Client client;
+                if (_repository.TryGetValue(id, out client))
+                {
+                    notFound = false;
+
+                    if (client.Pin == pin)
+                    {
+                        return true;
+                    }
+
+                    return false;
+                }
+                notFound = true;
+                return false;
+            }
+            finally
+            {
+                _lockSlim.ExitReadLock();
+            }
+        }
+
+        public OneTimePasswordList GetClientPassList(int id, int pin, out bool notFound)
+        {
+            _lockSlim.EnterReadLock();
+            try
+            {
+                Client client;
+                if (_repository.TryGetValue(id, out client))
+                {
+                    notFound = false;
+
+                    if (client.Pin == pin)
+                    {
+                        return client.ActivatedList;
+                    }
+
+                    return null;
+                }
+
+                notFound = true;
+                return null;
+            }
+            finally
+            {
+                _lockSlim.ExitReadLock();
+            }
+        }
+
+        public bool AuthorizeOperation(int id, int pin, string oneTimePassword, out bool notFound)
+        {
+            _lockSlim.EnterWriteLock();
+            try
+            {
+                Client client;
+                if (_repository.TryGetValue(id, out client))
+                {
+                    notFound = false;
+
+                    if (client.Pin == pin && client.ActivatedList.CurrentPassword() == oneTimePassword)
+                    {
+                        client.ActivatedList.UseCurrentPassword();
+                        return true;
+                    }
+
+                    return false;
+                }
+
+                notFound = true;
+                return false;
+            }
+            finally
+            {
+                _lockSlim.ExitWriteLock();
+            }
         }
 
         #endregion

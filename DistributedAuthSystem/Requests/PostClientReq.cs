@@ -3,19 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Web;
 
-namespace DistributedAuthSystem.Models
+namespace DistributedAuthSystem.Requests
 {
-    public class Client
+    public class PostClientReq
     {
         #region properties
 
         public int Id { get; set; }
 
         public int Pin { get; set; }
-
-        public OneTimePasswordList ActivatedList { get; set; }
-
-        public OneTimePasswordList NonactivatedList { get; set; }
 
         #endregion
     }
