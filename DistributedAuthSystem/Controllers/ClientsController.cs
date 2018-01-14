@@ -1,7 +1,12 @@
 ﻿using DistributedAuthSystem.Requests;
 using DistributedAuthSystem.Services;
+using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Text;
+using System.Threading;
 using System.Web.Http;
 
 namespace DistributedAuthSystem.Controllers
@@ -11,22 +16,46 @@ namespace DistributedAuthSystem.Controllers
     {
         #region fields
 
-        private readonly IClientsRepository _repository;
+        private readonly IClientsRepository _clientsRepository;
+
+        private readonly INeighboursRepository _neighboursRepository;
+
+        private readonly ISynchronizationsRepository _synchronizationsRepository;
+
+        public static ManualResetEvent allDone = new ManualResetEvent(false);
+
+        private const int DefaultTimeout = 1 * 30 * 1000; // 30 sekund
 
         #endregion
 
         #region methods
 
-        public ClientsController(IClientsRepository repository)
+        public ClientsController(IClientsRepository clientsRepository, INeighboursRepository neighboursRepository,
+            ISynchronizationsRepository synchronizationsRepository)
         {
-            _repository = repository;
+            _clientsRepository = clientsRepository;
+            _neighboursRepository = neighboursRepository;
+            _synchronizationsRepository = synchronizationsRepository;
+        }
+
+        // Abort the request if the timer fires.
+        private static void TimeoutCallback(object state, bool timedOut)
+        {
+            if (timedOut)
+            {
+                HttpWebRequest request = state as HttpWebRequest;
+                if (request != null)
+                {
+                    request.Abort();
+                }
+            }
         }
 
         [Route("")]
         [HttpGet]
         public HttpResponseMessage GetAllClients()
         {
-            var clients = _repository.GetAllClients();
+            var clients = _clientsRepository.GetAllClients();
             return Request.CreateResponse(HttpStatusCode.OK, clients);
         }
 
@@ -34,17 +63,64 @@ namespace DistributedAuthSystem.Controllers
         [HttpGet]
         public HttpResponseMessage GetSingleClient([FromUri] int id)
         {
-            var client = _repository.GetSingleClient(id);
+            var client = _clientsRepository.GetSingleClient(id);
             var statusCode = client == null ? HttpStatusCode.NotFound : HttpStatusCode.OK;
             return Request.CreateResponse(statusCode, client);
+        }
+
+        private static void RespCallback(IAsyncResult ar)
+        {
+            int a = 4;
+            WebRequest myWebRequest = (WebRequest)ar.AsyncState;
+            WebResponse resp = myWebRequest.EndGetResponse(ar);
+
+            using (Stream stream = resp.GetResponseStream())
+            {
+                StreamReader reader = new StreamReader(stream, Encoding.UTF8);
+                String responseString = reader.ReadToEnd();
+            }
+
         }
 
         [Route("")]
         [HttpPost]
         public HttpResponseMessage PostClient([FromBody] PostClientReq request)
         {
-            var success = _repository.PostClient(request.Id, request.Pin);
+            var success = _clientsRepository.PostClient(request.Id, request.Pin);
             var statusCode = success ? HttpStatusCode.Created : HttpStatusCode.Conflict;
+            if (success)
+            {
+                var neighbours = _neighboursRepository.GetAllNeighbours();
+                foreach (var neigh in neighbours)
+                {
+                    Dictionary<int, long> synchroTimesCopy;
+                    _synchronizationsRepository.GetSynchroTimesCopy(out synchroTimesCopy);
+                    var history = _clientsRepository.GetHistorySince(synchroTimesCopy[neigh.Id]);
+                    int senderId = 345;
+
+                    var fatRequest = new FatSynchronizationReq
+                    {
+                        SenderId = senderId,
+                        History = history,
+                        SynchroTimes = synchroTimesCopy
+                    };
+
+                    // tu normalnie wysylanie na fat request
+                    WebRequest wreq = WebRequest.Create(neigh.Url + "public/clients");
+                    IAsyncResult result = wreq.BeginGetResponse(new AsyncCallback(RespCallback), wreq);
+
+                    ThreadPool.RegisterWaitForSingleObject(result.AsyncWaitHandle, new WaitOrTimerCallback(TimeoutCallback), wreq, DefaultTimeout, true);
+
+                    //dokmyslnie GET
+                    //wreq.Method =
+                    /* request przygotowany, teraz tylko wyslac */
+                }
+                // wysylamy wiadomosc do innych (fat requesta)
+                // synchronizedTo = _synchronizationRepo.get(serwerId);
+                // clientRepo.GetOperations(from=synchronizedTo);
+                // prepare FatRequest
+                // sendFatRequestAsynchronous
+            }
             return Request.CreateResponse(statusCode);
         }
 
@@ -53,7 +129,7 @@ namespace DistributedAuthSystem.Controllers
         public HttpResponseMessage DeleteClient([FromUri] int id, [FromBody] int pin)
         {
             bool notFound;
-            var success = _repository.DeleteClient(id, pin, out notFound);
+            var success = _clientsRepository.DeleteClient(id, pin, out notFound);
             var statusCode = success ? HttpStatusCode.OK : notFound ? HttpStatusCode.NotFound : HttpStatusCode.Unauthorized;
             return Request.CreateResponse(statusCode);
         }
@@ -63,7 +139,7 @@ namespace DistributedAuthSystem.Controllers
         public HttpResponseMessage ChangeClientPin([FromUri] int id, [FromBody] ChangeClientPinReq request)
         {
             bool notFound;
-            var success = _repository.ChangeClientPin(id, request.CurrentPin, request.NewPin, out notFound);
+            var success = _clientsRepository.ChangeClientPin(id, request.CurrentPin, request.NewPin, out notFound);
             var statusCode = success ? HttpStatusCode.OK : notFound ? HttpStatusCode.NotFound : HttpStatusCode.Unauthorized;
             return Request.CreateResponse(statusCode);
         }
@@ -73,7 +149,7 @@ namespace DistributedAuthSystem.Controllers
         public HttpResponseMessage AuthenticateClient([FromUri] int id, [FromBody] int pin)
         {
             bool notFound;
-            var success = _repository.AuthenticateClient(id, pin, out notFound);
+            var success = _clientsRepository.AuthenticateClient(id, pin, out notFound);
             var statusCode = success ? HttpStatusCode.OK : notFound ? HttpStatusCode.NotFound : HttpStatusCode.Unauthorized;
             return Request.CreateResponse(statusCode);
         }
@@ -83,7 +159,7 @@ namespace DistributedAuthSystem.Controllers
         public HttpResponseMessage GetClientPassList([FromUri] int id, [FromBody] int pin)
         {
             bool notFound;
-            var passwordList = _repository.GetClientPassList(id, pin, out notFound);
+            var passwordList = _clientsRepository.GetClientPassList(id, pin, out notFound);
             var statusCode = passwordList == null ? notFound ? HttpStatusCode.NotFound : HttpStatusCode.Unauthorized : HttpStatusCode.OK;
             return Request.CreateResponse(statusCode, passwordList);
         }
@@ -93,7 +169,7 @@ namespace DistributedAuthSystem.Controllers
         public HttpResponseMessage AuthorizeOperation([FromUri] int id, [FromBody] AuthorizaOperationReq request)
         {
             bool notFound;
-            var success = _repository.AuthorizeOperation(id, request.Pin, request.OneTimePassword, out notFound);
+            var success = _clientsRepository.AuthorizeOperation(id, request.Pin, request.OneTimePassword, out notFound);
             var statusCode = success ? HttpStatusCode.OK : notFound ? HttpStatusCode.NotFound : HttpStatusCode.Unauthorized;
             return Request.CreateResponse(statusCode);
         }
@@ -103,7 +179,7 @@ namespace DistributedAuthSystem.Controllers
         public HttpResponseMessage ActivateNewPassList([FromUri] int id, [FromBody] ActivateNewPassListReq request)
         {
             bool notFound;
-            var success = _repository.ActivateNewPassList(id, request.Pin, request.OneTimePassword, out notFound);
+            var success = _clientsRepository.ActivateNewPassList(id, request.Pin, request.OneTimePassword, out notFound);
             var statusCode = success ? HttpStatusCode.OK : notFound ? HttpStatusCode.NotFound : HttpStatusCode.Unauthorized;
             return Request.CreateResponse(statusCode);
         }

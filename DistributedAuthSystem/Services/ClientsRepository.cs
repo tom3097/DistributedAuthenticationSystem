@@ -30,6 +30,7 @@ namespace DistributedAuthSystem.Services
             _repository = new Dictionary<int, Client>();
             _lockSlim = new ReaderWriterLockSlim();
             _serializer = new JavaScriptSerializer();
+            _operationsLog = new OperationsLog();
         }
 
         public Client[] GetAllClients()
@@ -270,6 +271,19 @@ namespace DistributedAuthSystem.Services
             finally
             {
                 _lockSlim.ExitWriteLock();
+            }
+        }
+
+        public Operation[] GetHistorySince(long timestamp)
+        {
+            _lockSlim.EnterReadLock();
+            try
+            {
+                return _operationsLog.GetOperationsSince(timestamp);
+            }
+            finally
+            {
+                _lockSlim.ExitReadLock();
             }
         }
 

@@ -14,15 +14,19 @@ namespace DistributedAuthSystem.Controllers
     {
         #region fields
 
-        private readonly IClientsRepository _repository;
+        private readonly ISynchronizationsRepository _synchronizationsRepository;
+
+        private readonly IClientsRepository _clientsRepository;
 
         #endregion
 
         #region methods
 
-        public SynchroController(IClientsRepository repository)
+        public SynchroController(ISynchronizationsRepository synchronizationRepository,
+            IClientsRepository clientsRepository)
         {
-            _repository = repository;
+            _synchronizationsRepository = synchronizationRepository;
+            _clientsRepository = clientsRepository;
         }
 
         [Route("fat")]

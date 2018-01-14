@@ -17,6 +17,7 @@ namespace DistributedAuthSystem
             var container = new UnityContainer();
             container.RegisterType<INeighboursRepository, NeighboursRepository>(new ContainerControlledLifetimeManager());
             container.RegisterType<IClientsRepository, ClientsRepository>(new ContainerControlledLifetimeManager());
+            container.RegisterType<ISynchronizationsRepository, SynchronizationsRepository>(new ContainerControlledLifetimeManager());
             config.DependencyResolver = new UnityResolver(container);
 
             // Web API routes

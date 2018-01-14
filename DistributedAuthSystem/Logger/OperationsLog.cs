@@ -27,6 +27,7 @@ namespace DistributedAuthSystem.Logger
         public OperationsLog()
         {
             _history = new List<Operation>();
+            _lockSlim = new ReaderWriterLockSlim();
             _prevHash = null;
         }
 
@@ -67,6 +68,27 @@ namespace DistributedAuthSystem.Logger
             {
                 byte[] encryptedBytes = sha.TransformFinalBlock(data, 0, data.Length);
                 return Convert.ToBase64String(sha.Hash);
+            }
+        }
+
+        public Operation[] GetOperationsSince(long timestamp)
+        {
+            _lockSlim.EnterReadLock();
+            try
+            {
+                var operations = new Stack<Operation>();
+
+                int index = _history.Count - 1;
+                while (index >= 0 && _history[index].Timestamp > timestamp)
+                {
+                    operations.Push(_history[index--]);
+                }
+
+                return operations.ToArray();
+            }
+            finally
+            {
+                _lockSlim.ExitReadLock();
             }
         }
 
