@@ -1,8 +1,11 @@
-﻿using DistributedAuthSystem.Extensions;
+﻿using DistributedAuthSystem.Constants;
+using DistributedAuthSystem.Extensions;
+using DistributedAuthSystem.Logger;
 using DistributedAuthSystem.Models;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Web.Script.Serialization;
 
 namespace DistributedAuthSystem.Services
 {
@@ -14,6 +17,10 @@ namespace DistributedAuthSystem.Services
 
         private readonly ReaderWriterLockSlim _lockSlim;
 
+        private readonly JavaScriptSerializer _serializer;
+
+        private readonly OperationsLog _operationsLog;
+
         #endregion
 
         #region methods
@@ -22,6 +29,7 @@ namespace DistributedAuthSystem.Services
         {
             _repository = new Dictionary<int, Client>();
             _lockSlim = new ReaderWriterLockSlim();
+            _serializer = new JavaScriptSerializer();
         }
 
         public Client[] GetAllClients()
@@ -69,6 +77,10 @@ namespace DistributedAuthSystem.Services
                     };
                     client.InitializePasswordLists();
                     _repository.Add(id, client);
+
+                    var serializedData = _serializer.Serialize(client);
+                    _operationsLog.Add(OperationType.ADD_CLIENT, serializedData);
+
                     return true;
                 }
             }
@@ -93,6 +105,10 @@ namespace DistributedAuthSystem.Services
                     if (client.Pin == pin)
                     {
                         _repository.Remove(id);
+
+                        var serializedData = _serializer.Serialize(client);
+                        _operationsLog.Add(OperationType.DELETE_CLIENT, serializedData);
+
                         return true;
                     }
 
@@ -120,6 +136,10 @@ namespace DistributedAuthSystem.Services
                     if (client.Pin == currentPin)
                     {
                         client.Pin = newPin;
+
+                        var serializedData = _serializer.Serialize(client);
+                        _operationsLog.Add(OperationType.CHANGE_PASSWORD, serializedData);
+
                         return true;
                     }
 
@@ -201,6 +221,10 @@ namespace DistributedAuthSystem.Services
                         client.CurrentActivePassword() == oneTimePassword)
                     {
                         client.UseCurrentActivePassword();
+
+                        var serializedData = _serializer.Serialize(client);
+                        _operationsLog.Add(OperationType.AUTHORIZATION, serializedData);
+
                         return true;
                     }
 
@@ -230,6 +254,10 @@ namespace DistributedAuthSystem.Services
                         client.CurrentActivePassword() == oneTimePassword)
                     {
                         client.ActivateNewPassList();
+
+                        var serializedData = _serializer.Serialize(client);
+                        _operationsLog.Add(OperationType.LIST_ACTIVATION, serializedData);
+
                         return true;
                     }
 

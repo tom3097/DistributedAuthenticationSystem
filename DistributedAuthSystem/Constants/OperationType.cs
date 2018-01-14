@@ -8,6 +8,9 @@ namespace DistributedAuthSystem.Constants
     public enum OperationType
     {
         ADD_CLIENT,
-        CHANGE_PASSWORD
+        DELETE_CLIENT,
+        CHANGE_PASSWORD,
+        AUTHORIZATION,
+        LIST_ACTIVATION
     }
 }

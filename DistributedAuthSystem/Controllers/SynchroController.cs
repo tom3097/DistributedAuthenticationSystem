@@ -1,4 +1,5 @@
 ﻿using DistributedAuthSystem.Requests;
+using DistributedAuthSystem.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,7 +12,18 @@ namespace DistributedAuthSystem.Controllers
     [RoutePrefix("private/synchro")]
     public class SynchroController : ApiController
     {
+        #region fields
+
+        private readonly IClientsRepository _repository;
+
+        #endregion
+
         #region methods
+
+        public SynchroController(IClientsRepository repository)
+        {
+            _repository = repository;
+        }
 
         [Route("fat")]
         [HttpPost]

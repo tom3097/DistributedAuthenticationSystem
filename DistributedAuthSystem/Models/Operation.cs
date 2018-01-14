@@ -10,15 +10,15 @@ namespace DistributedAuthSystem.Models
     {
         #region fields
 
-        long Timestamp { get; set; }
+        public long Timestamp { get; set; }
 
-        string Hash { get; set; }
+        public string Hash { get; set; }
 
-        int SequenceNumber { get; set; }
+        public int SequenceNumber { get; set; }
 
-        OperationType Type { get; set; }
+        public OperationType Type { get; set; }
 
-        string Data { get; set; }
+        public string Data { get; set; }
 
         #endregion
     }

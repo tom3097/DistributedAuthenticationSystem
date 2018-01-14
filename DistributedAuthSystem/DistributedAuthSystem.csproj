@@ -213,6 +213,7 @@
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
+    <Compile Include="Logger\OperationsLog.cs" />
     <Compile Include="Models\Client.cs" />
     <Compile Include="Models\Neighbour.cs" />
     <Compile Include="Models\OneTimePasswordList.cs" />
@@ -229,7 +230,9 @@
     <Compile Include="Services\ClientsRepository.cs" />
     <Compile Include="Services\IClientsRepository.cs" />
     <Compile Include="Services\INeighboursRepository.cs" />
+    <Compile Include="Services\ISynchroTimesRepository.cs" />
     <Compile Include="Services\NeighboursRepository.cs" />
+    <Compile Include="Services\SynchroTimesRepository.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Areas\HelpPage\HelpPage.css" />
