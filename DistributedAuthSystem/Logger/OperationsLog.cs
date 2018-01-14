@@ -18,7 +18,7 @@ namespace DistributedAuthSystem.Logger
 
         private readonly ReaderWriterLockSlim _lockSlim;
 
-        private string _prevHash;
+        private string _lastHash;
 
         #endregion
 
@@ -28,7 +28,7 @@ namespace DistributedAuthSystem.Logger
         {
             _history = new List<Operation>();
             _lockSlim = new ReaderWriterLockSlim();
-            _prevHash = null;
+            _lastHash = null;
         }
 
         public void Add(OperationType operationType, string serializedData)
@@ -45,7 +45,7 @@ namespace DistributedAuthSystem.Logger
                     Data = serializedData
                 };
                 _history.Add(operation);
-                _prevHash = operation.Hash;
+                _lastHash = operation.Hash;
             }
             finally
             {
@@ -62,7 +62,7 @@ namespace DistributedAuthSystem.Logger
         private string GenerateHash(OperationType operationType, string serializedData)
         {
             var plainText = String.Format("{0}{1}{2}", operationType.ToString(), serializedData,
-                _prevHash ?? "");
+                _lastHash ?? "");
             byte[] data = Encoding.UTF8.GetBytes(plainText);
             using (HashAlgorithm sha = new SHA256Managed())
             {
@@ -89,6 +89,33 @@ namespace DistributedAuthSystem.Logger
             finally
             {
                 _lockSlim.ExitReadLock();
+            }
+        }
+
+        public string GetLastHash()
+        {
+            _lockSlim.EnterReadLock();
+            try
+            {
+                return _lastHash;
+            }
+            finally
+            {
+                _lockSlim.ExitReadLock();
+            }
+        }
+
+        public void AddMissing(Operation[] operations)
+        {
+            _lockSlim.EnterWriteLock();
+            try
+            {
+                _history.AddRange(operations);
+                _lastHash = _history.Last().Hash;
+            }
+            finally
+            {
+                _lockSlim.ExitWriteLock();
             }
         }
 

@@ -9,7 +9,7 @@ namespace DistributedAuthSystem.Services
     {
         #region fields
 
-        private Dictionary<int, Neighbour> _repository;
+        private Dictionary<string, Neighbour> _repository;
 
         private readonly ReaderWriterLockSlim _lockSlim;
 
@@ -19,7 +19,7 @@ namespace DistributedAuthSystem.Services
 
         public NeighboursRepository()
         {
-            _repository = new Dictionary<int, Neighbour>();
+            _repository = new Dictionary<string, Neighbour>();
             _lockSlim = new ReaderWriterLockSlim();
         }
 
@@ -36,7 +36,7 @@ namespace DistributedAuthSystem.Services
             }
         }
 
-        public Neighbour GetSingleNeighbour(int id)
+        public Neighbour GetSingleNeighbour(string id)
         {
             Neighbour neighbour;
             bool success;
@@ -54,7 +54,7 @@ namespace DistributedAuthSystem.Services
             return success ? neighbour : null;
         }
 
-        public bool PostNeighbour(int id, string url)
+        public bool PostNeighbour(string id, string url)
         {
             _lockSlim.EnterWriteLock();
             try
@@ -79,7 +79,7 @@ namespace DistributedAuthSystem.Services
             return false;
         }
 
-        public bool DeleteNeighbour(int id)
+        public bool DeleteNeighbour(string id)
         {
             _lockSlim.EnterWriteLock();
             try
@@ -92,7 +92,7 @@ namespace DistributedAuthSystem.Services
             }
         }
 
-        public bool SetSpecialNeighbour(int id, bool isSpecial)
+        public bool SetSpecialNeighbour(string id, bool isSpecial)
         {
             _lockSlim.EnterWriteLock();
             try

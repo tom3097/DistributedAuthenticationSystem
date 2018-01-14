@@ -203,7 +203,9 @@
     <Compile Include="Areas\HelpPage\SampleGeneration\TextSample.cs" />
     <Compile Include="Areas\HelpPage\XmlDocumentationProvider.cs" />
     <Compile Include="Constants\OperationType.cs" />
+    <Compile Include="Constants\SynchroResultType.cs" />
     <Compile Include="Controllers\ClientsController.cs" />
+    <Compile Include="Controllers\ServerInfoController.cs" />
     <Compile Include="Controllers\SynchroController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Controllers\NeighboursController.cs" />
@@ -227,11 +229,14 @@
     <Compile Include="Requests\PostNeighbourReq.cs" />
     <Compile Include="Requests\ThinSynchronizationReq.cs" />
     <Compile Include="Resolver\UnityResolver.cs" />
+    <Compile Include="Responses\FatSynchronizationRes.cs" />
     <Compile Include="Services\ClientsRepository.cs" />
     <Compile Include="Services\IClientsRepository.cs" />
     <Compile Include="Services\INeighboursRepository.cs" />
+    <Compile Include="Services\IServerInfoRepository.cs" />
     <Compile Include="Services\ISynchronizationsRepository.cs" />
     <Compile Include="Services\NeighboursRepository.cs" />
+    <Compile Include="Services\ServerInfoRepository.cs" />
     <Compile Include="Services\SynchronizationsRepository.cs" />
   </ItemGroup>
   <ItemGroup>

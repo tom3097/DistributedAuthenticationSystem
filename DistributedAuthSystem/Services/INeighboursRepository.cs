@@ -13,13 +13,13 @@ namespace DistributedAuthSystem.Services
 
         Neighbour[] GetAllNeighbours();
 
-        Neighbour GetSingleNeighbour(int id);
+        Neighbour GetSingleNeighbour(string id);
 
-        bool PostNeighbour(int id, string url);
+        bool PostNeighbour(string id, string url);
 
-        bool DeleteNeighbour(int id);
+        bool DeleteNeighbour(string id);
 
-        bool SetSpecialNeighbour(int id, bool isSpecial);
+        bool SetSpecialNeighbour(string id, bool isSpecial);
 
         #endregion
     }

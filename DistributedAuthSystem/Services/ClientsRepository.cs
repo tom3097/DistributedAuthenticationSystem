@@ -287,6 +287,95 @@ namespace DistributedAuthSystem.Services
             }
         }
 
+        private void UpdateMissingOperation(Operation operation)
+        {
+            // odzyskiwanie danych -> z json obiekt klasy klient
+            var client = _serializer.Deserialize<Client>(operation.Data);
+            switch (operation.Type)
+            {
+                case OperationType.ADD_CLIENT:
+                    _repository.Add(client.Id, client);
+                    break;
+                case OperationType.AUTHORIZATION:
+                    break;
+                case OperationType.CHANGE_PASSWORD:
+                    break;
+                case OperationType.DELETE_CLIENT:
+                    break;
+                case OperationType.LIST_ACTIVATION:
+                    break;
+            }
+        }
+
+        public SynchroResultType UpdateHistory(Operation[] operations)
+        {
+            _lockSlim.EnterWriteLock();
+            try
+            {
+                if (operations == null || operations.Count() == 0)
+                {
+                    // chyba nie powinno sie zdarzyc ale co tam
+                    return SynchroResultType.OK;
+                }
+                // sprawdzamy czy serwer ma juz aktualna historie
+                if (_operationsLog.GetLastHash() == operations.Last().Hash)
+                {
+                    // operacja juz zsynchronizowana
+                }
+
+                // jedziemy z KOKOSEM -_-
+                var operation = operations.First();
+                var timeOfFirstOpe = operation.Timestamp;
+
+                var opes = _operationsLog.GetOperationsSince(timeOfFirstOpe-1);
+
+                /* porownywanie operacji nowych i lokalnych */
+                int maxi = operations.Length < opes.Length ? operations.Length : opes.Length;
+
+                /* sprawdzanie czy sa konflikty */
+                for (int i = 0; i < maxi; ++i)
+                {
+                    if (operations[i].Hash != opes[i].Hash)
+                    {
+                        /* wykryto konflikt, jeszcze nie wiedomo kto ma racje */
+                        return SynchroResultType.CONFLICT;
+                    }
+                }
+
+                if (operations.Length == opes.Length)
+                {
+                    /* tyle samo operacji, ktore zostaly juz porownane, wiec wszystko ok */
+                    /* already sync */
+                    return SynchroResultType.OK;
+                }
+
+                /* brak konfliktow */
+                if (opes.Length > operations.Length)
+                {
+                    /* my posiadamy wiecej informacji niz tamten serwer, powiedz mu ze jest nieaktualny */
+                    return SynchroResultType.U2OLD;
+                }
+
+                /* tU: sender ma wiecej operacji niz my, przy czym operacje wspolne nie koliduja */
+                int new_ope_idx = maxi;
+
+                /* tu iterujemy po tych operacjach i jakos je dodajemy */
+                for (int i = new_ope_idx; i < operations.Length; ++i)
+                {
+                    UpdateMissingOperation(operations[i]);
+                }
+
+                var toAdd = new List<Operation>(operations).GetRange(new_ope_idx, operations.Length - new_ope_idx).ToArray();
+                _operationsLog.AddMissing(toAdd);
+
+                return SynchroResultType.OK;
+            }
+            finally
+            {
+                _lockSlim.ExitWriteLock();
+            }
+        }
+
         #endregion
     }
 }

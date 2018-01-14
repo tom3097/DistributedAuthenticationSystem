@@ -10,7 +10,7 @@ namespace DistributedAuthSystem.Services
     {
         #region fields
 
-        private Dictionary<int, long> _synchroTimes;
+        private Dictionary<string, long> _synchroTimes;
 
         private readonly ReaderWriterLockSlim _lockSlim;
 
@@ -20,11 +20,11 @@ namespace DistributedAuthSystem.Services
 
         public SynchronizationsRepository()
         {
-            _synchroTimes = new Dictionary<int, long>();
+            _synchroTimes = new Dictionary<string, long>();
             _lockSlim = new ReaderWriterLockSlim();
         }
 
-        public bool RegisterServer(int id)
+        public bool RegisterServer(string id)
         {
             _lockSlim.EnterWriteLock();
             try
@@ -43,7 +43,7 @@ namespace DistributedAuthSystem.Services
             }
         }
 
-        public bool UnregisterServer(int id)
+        public bool UnregisterServer(string id)
         {
             _lockSlim.EnterWriteLock();
             try
@@ -56,7 +56,7 @@ namespace DistributedAuthSystem.Services
             }
         }
 
-        public bool UpdateSynchroTime(int id, long timestamp)
+        public bool UpdateSynchroTime(string id, long timestamp)
         {
             _lockSlim.EnterWriteLock();
             try
@@ -75,12 +75,12 @@ namespace DistributedAuthSystem.Services
             }
         }
 
-        public bool GetSynchroTimesCopy(out Dictionary<int, long> synchroTimesCopy)
+        public bool GetSynchroTimesCopy(out Dictionary<string, long> synchroTimesCopy)
         {
             _lockSlim.EnterReadLock();
             try
             {
-                synchroTimesCopy = new Dictionary<int, long>(_synchroTimes);
+                synchroTimesCopy = new Dictionary<string, long>(_synchroTimes);
                 return true;
             }
             finally

@@ -10,13 +10,13 @@ namespace DistributedAuthSystem.Services
     {
         #region methods
 
-        bool RegisterServer(int id);
+        bool RegisterServer(string id);
 
-        bool UnregisterServer(int id);
+        bool UnregisterServer(string id);
 
-        bool UpdateSynchroTime(int id, long timestamp);
+        bool UpdateSynchroTime(string id, long timestamp);
 
-        bool GetSynchroTimesCopy(out Dictionary<int, long> synchroTimesCopy);
+        bool GetSynchroTimesCopy(out Dictionary<string, long> synchroTimesCopy);
 
         #endregion
     }

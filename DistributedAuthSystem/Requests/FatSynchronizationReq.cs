@@ -10,11 +10,11 @@ namespace DistributedAuthSystem.Requests
     {
         #region properties
 
-        public int SenderId { get; set; }
+        public string SenderId { get; set; }
 
         public Operation[] History { get; set; }
 
-        public Dictionary<int, long> SynchroTimes { get; set; }
+        public Dictionary<string, long> SynchroTimes { get; set; }
 
         #endregion
     }

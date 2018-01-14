@@ -34,9 +34,9 @@ namespace DistributedAuthSystem.Controllers
             return Request.CreateResponse(HttpStatusCode.OK, neighbours);
         }
 
-        [Route("{id:int}")]
+        [Route("{id}")]
         [HttpGet]
-        public HttpResponseMessage GetSingleNeighbour([FromUri] int id)
+        public HttpResponseMessage GetSingleNeighbour([FromUri] string id)
         {
             var neighbour = _neighboursRepository.GetSingleNeighbour(id);
             var statusCode = neighbour == null ? HttpStatusCode.NotFound : HttpStatusCode.OK;
@@ -56,9 +56,9 @@ namespace DistributedAuthSystem.Controllers
             return Request.CreateResponse(statusCode);
         }
 
-        [Route("{id:int}")]
+        [Route("{id}")]
         [HttpDelete]
-        public HttpResponseMessage DeleteNeighbour([FromUri] int id)
+        public HttpResponseMessage DeleteNeighbour([FromUri] string id)
         {
             var success = _neighboursRepository.DeleteNeighbour(id);
             if (success)
@@ -69,9 +69,9 @@ namespace DistributedAuthSystem.Controllers
             return Request.CreateResponse(statusCode);
         }
 
-        [Route("{id:int}/special")]
+        [Route("{id}/special")]
         [HttpPut]
-        public HttpResponseMessage SetSpecialNeighbour([FromUri] int id, [FromBody] bool isSpecial)
+        public HttpResponseMessage SetSpecialNeighbour([FromUri] string id, [FromBody] bool isSpecial)
         {
             var success = _neighboursRepository.SetSpecialNeighbour(id, isSpecial);
             var statusCode = success ? HttpStatusCode.OK : HttpStatusCode.NotFound;

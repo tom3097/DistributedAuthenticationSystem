@@ -1,4 +1,5 @@
-﻿using DistributedAuthSystem.Models;
+﻿using DistributedAuthSystem.Constants;
+using DistributedAuthSystem.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -30,6 +31,8 @@ namespace DistributedAuthSystem.Services
         bool ActivateNewPassList(int id, int pin, string oneTimePassword, out bool notFound);
 
         Operation[] GetHistorySince(long timestamp);
+
+        SynchroResultType UpdateHistory(Operation[] operations);
 
         #endregion
     }
