@@ -56,7 +56,7 @@ namespace DistributedAuthSystem.Services
             }
         }
 
-        public bool UpdateSynchroTime(string id, long timestamp)
+        public bool UpdateTime(string id, long timestamp)
         {
             _lockSlim.EnterWriteLock();
             try
@@ -86,6 +86,35 @@ namespace DistributedAuthSystem.Services
             finally
             {
                 _lockSlim.ExitReadLock();
+            }
+        }
+
+        public void UpdateSynchroTimes(Dictionary<string, long> synchroTimesSource, string sourceId,
+            long synchroToTime)
+        {
+            foreach (var key in _synchroTimes.Keys.ToList())
+            {
+                if (key == sourceId)
+                {
+                    continue;
+                }
+
+                if (_synchroTimes[key] < synchroTimesSource[key])
+                {
+                    _synchroTimes[key] = synchroTimesSource[key] > synchroToTime
+                        ? synchroToTime : synchroTimesSource[key];
+                }
+            }
+        }
+
+        public void FixSynchroTimes(long maxSynchroTime)
+        {
+            foreach (var key in _synchroTimes.Keys.ToList())
+            {
+                if (_synchroTimes[key] > maxSynchroTime)
+                {
+                    _synchroTimes[key] = maxSynchroTime;
+                }
             }
         }
 

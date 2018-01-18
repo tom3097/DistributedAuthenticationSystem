@@ -14,9 +14,14 @@ namespace DistributedAuthSystem.Services
 
         bool UnregisterServer(string id);
 
-        bool UpdateSynchroTime(string id, long timestamp);
+        bool UpdateTime(string id, long timestamp);
 
         bool GetSynchroTimesCopy(out Dictionary<string, long> synchroTimesCopy);
+
+        void UpdateSynchroTimes(Dictionary<string, long> synchroTimesSource, string sourceId,
+            long synchroToTime);
+
+        void FixSynchroTimes(long maxSynchroTime);
 
         #endregion
     }

@@ -8,7 +8,9 @@ namespace DistributedAuthSystem.Constants
     public enum SynchroResultType
     {
         OK,
+        ALREADY_SYNC,
         CONFLICT,
+        FIXED,
         U2OLD
     }
 }

@@ -238,6 +238,7 @@
     <Compile Include="Services\NeighboursRepository.cs" />
     <Compile Include="Services\ServerInfoRepository.cs" />
     <Compile Include="Services\SynchronizationsRepository.cs" />
+    <Compile Include="States\RequestState.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Areas\HelpPage\HelpPage.css" />

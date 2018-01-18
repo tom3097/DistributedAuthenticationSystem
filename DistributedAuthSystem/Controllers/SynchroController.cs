@@ -38,14 +38,31 @@ namespace DistributedAuthSystem.Controllers
         [HttpPost]
         public HttpResponseMessage FatSynchronization([FromBody] FatSynchronizationReq request)
         {
-            var success = _clientsRepository.UpdateHistory(request.History);
-            var statusCode = success == SynchroResultType.OK ? HttpStatusCode.OK : HttpStatusCode.Forbidden;
+            long maxSyncTime;
+            var result = _clientsRepository.UpdateHistory(request.History, out maxSyncTime);
+            if (result == SynchroResultType.FIXED)
+            {
+                _synchronizationsRepository.FixSynchroTimes(maxSyncTime);
+            }
+
+            if (result != SynchroResultType.CONFLICT)
+            {
+                _synchronizationsRepository.UpdateSynchroTimes(request.SynchroTimes, request.SenderId,
+                    request.History.Last().Timestamp);
+            }
+
+            var statusCode = result == SynchroResultType.CONFLICT || result == SynchroResultType.U2OLD ?
+                HttpStatusCode.SeeOther : HttpStatusCode.OK;
+
+            Dictionary<string, long> synchroTimesCopy;
+            _synchronizationsRepository.GetSynchroTimesCopy(out synchroTimesCopy);
 
             var fatResponse = new FatSynchronizationRes
             {
-                Type = success,
+                Type = result,
                 SynchroTimestamp = request.History.Last().Timestamp,
-                SenderId = _serverInfoRepository.GetServerId()
+                SenderId = _serverInfoRepository.GetServerId(),
+                SynchroTimes = synchroTimesCopy
             };
 
             return Request.CreateResponse(HttpStatusCode.OK, fatResponse);

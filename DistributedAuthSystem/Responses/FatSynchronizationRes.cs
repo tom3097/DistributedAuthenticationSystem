@@ -13,5 +13,7 @@ namespace DistributedAuthSystem.Responses
         public SynchroResultType Type { get; set; }
 
         public long SynchroTimestamp { get; set; }
+
+        public Dictionary<string, long> SynchroTimes { get; set; }
     }
 }

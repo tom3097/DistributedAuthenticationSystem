@@ -18,7 +18,9 @@ namespace DistributedAuthSystem.Models
 
         public OperationType Type { get; set; }
 
-        public string Data { get; set; }
+        public string DataBefore { get; set; }
+
+        public string DataAfter { get; set; }
 
         #endregion
     }

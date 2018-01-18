@@ -33,7 +33,7 @@ namespace DistributedAuthSystem.Controllers
         }
 
         [Route("{id}")]
-        [HttpGet] /* tylko tymczasowo GET - normalnie PUT */
+        [HttpPut]
         public HttpResponseMessage PutServerId([FromUri] string id)
         {
             var success = _serverInfoRepository.PutServerId(id);

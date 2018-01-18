@@ -79,8 +79,8 @@ namespace DistributedAuthSystem.Services
                     client.InitializePasswordLists();
                     _repository.Add(id, client);
 
-                    var serializedData = _serializer.Serialize(client);
-                    _operationsLog.Add(OperationType.ADD_CLIENT, serializedData);
+                    var serializedAfter = _serializer.Serialize(client);
+                    _operationsLog.Add(OperationType.ADD_CLIENT, null, serializedAfter);
 
                     return true;
                 }
@@ -107,8 +107,8 @@ namespace DistributedAuthSystem.Services
                     {
                         _repository.Remove(id);
 
-                        var serializedData = _serializer.Serialize(client);
-                        _operationsLog.Add(OperationType.DELETE_CLIENT, serializedData);
+                        var serializedBefore = _serializer.Serialize(client);
+                        _operationsLog.Add(OperationType.DELETE_CLIENT, serializedBefore, null);
 
                         return true;
                     }
@@ -136,10 +136,12 @@ namespace DistributedAuthSystem.Services
 
                     if (client.Pin == currentPin)
                     {
+                        var serializedBefore = _serializer.Serialize(client);
+
                         client.Pin = newPin;
 
-                        var serializedData = _serializer.Serialize(client);
-                        _operationsLog.Add(OperationType.CHANGE_PASSWORD, serializedData);
+                        var serializedAfter = _serializer.Serialize(client);
+                        _operationsLog.Add(OperationType.CHANGE_PASSWORD, serializedBefore, serializedAfter);
 
                         return true;
                     }
@@ -221,10 +223,12 @@ namespace DistributedAuthSystem.Services
                     if (client.Pin == pin && client.CanAuthorizeOperation() &&
                         client.CurrentActivePassword() == oneTimePassword)
                     {
+                        var serializedBefore = _serializer.Serialize(client);
+
                         client.UseCurrentActivePassword();
 
-                        var serializedData = _serializer.Serialize(client);
-                        _operationsLog.Add(OperationType.AUTHORIZATION, serializedData);
+                        var serializedAfter = _serializer.Serialize(client);
+                        _operationsLog.Add(OperationType.AUTHORIZATION, serializedBefore, serializedAfter);
 
                         return true;
                     }
@@ -254,10 +258,12 @@ namespace DistributedAuthSystem.Services
                     if (client.Pin == pin && client.CanActivateNewPassList() &&
                         client.CurrentActivePassword() == oneTimePassword)
                     {
+                        var serializedBefore = _serializer.Serialize(client);
+
                         client.ActivateNewPassList();
 
-                        var serializedData = _serializer.Serialize(client);
-                        _operationsLog.Add(OperationType.LIST_ACTIVATION, serializedData);
+                        var serializedAfter = _serializer.Serialize(client);
+                        _operationsLog.Add(OperationType.LIST_ACTIVATION, serializedBefore, serializedAfter);
 
                         return true;
                     }
@@ -289,83 +295,118 @@ namespace DistributedAuthSystem.Services
 
         private void UpdateMissingOperation(Operation operation)
         {
-            // odzyskiwanie danych -> z json obiekt klasy klient
-            var client = _serializer.Deserialize<Client>(operation.Data);
+            var clientBefore = operation.DataBefore == null ? null :
+                _serializer.Deserialize<Client>(operation.DataBefore);
+            var clientAfter = operation.DataAfter == null ? null :
+                _serializer.Deserialize<Client>(operation.DataAfter);
+            int id = clientBefore == null ? clientAfter.Id : clientBefore.Id;
             switch (operation.Type)
             {
                 case OperationType.ADD_CLIENT:
-                    _repository.Add(client.Id, client);
+                    _repository.Add(id, clientAfter);
                     break;
                 case OperationType.AUTHORIZATION:
+                    _repository[id] = clientAfter;
                     break;
                 case OperationType.CHANGE_PASSWORD:
+                    _repository[id] = clientAfter;
                     break;
                 case OperationType.DELETE_CLIENT:
+                    _repository.Remove(id);
                     break;
                 case OperationType.LIST_ACTIVATION:
+                    _repository[id] = clientAfter;
                     break;
             }
         }
 
-        public SynchroResultType UpdateHistory(Operation[] operations)
+        private void UndoOperation(Operation operation)
         {
+            var clientBefore = operation.DataBefore == null ? null :
+                _serializer.Deserialize<Client>(operation.DataBefore);
+            var clientAfter = operation.DataAfter == null ? null :
+                _serializer.Deserialize<Client>(operation.DataAfter);
+            int id = clientBefore == null ? clientAfter.Id : clientBefore.Id;
+            switch (operation.Type)
+            {
+                case OperationType.ADD_CLIENT:
+                    _repository.Remove(id);
+                    break;
+                case OperationType.AUTHORIZATION:
+                    _repository[id] = clientBefore;
+                    break;
+                case OperationType.CHANGE_PASSWORD:
+                    _repository[id] = clientBefore;
+                    break;
+                case OperationType.DELETE_CLIENT:
+                    _repository[id] = clientBefore;
+                    break;
+                case OperationType.LIST_ACTIVATION:
+                    _repository[id] = clientBefore;
+                    break;
+            }
+        }
+
+        public SynchroResultType UpdateHistory(Operation[] operations, out long maxSynchroTime)
+        {
+            maxSynchroTime = -1;
+
             _lockSlim.EnterWriteLock();
             try
             {
-                if (operations == null || operations.Count() == 0)
-                {
-                    // chyba nie powinno sie zdarzyc ale co tam
-                    return SynchroResultType.OK;
-                }
-                // sprawdzamy czy serwer ma juz aktualna historie
                 if (_operationsLog.GetLastHash() == operations.Last().Hash)
                 {
-                    // operacja juz zsynchronizowana
+                    return SynchroResultType.ALREADY_SYNC;
                 }
 
-                // jedziemy z KOKOSEM -_-
-                var operation = operations.First();
-                var timeOfFirstOpe = operation.Timestamp;
+                var firstOpeTimestamp = operations.First().Timestamp;
+                var localOperations = _operationsLog.GetOperationsSince(firstOpeTimestamp - 1);
 
-                var opes = _operationsLog.GetOperationsSince(timeOfFirstOpe-1);
-
-                /* porownywanie operacji nowych i lokalnych */
-                int maxi = operations.Length < opes.Length ? operations.Length : opes.Length;
-
-                /* sprawdzanie czy sa konflikty */
-                for (int i = 0; i < maxi; ++i)
+                int minLength = operations.Length < localOperations.Length ? operations.Length : localOperations.Length;
+                for (int i = 0; i < minLength; ++i)
                 {
-                    if (operations[i].Hash != opes[i].Hash)
+                    if (operations[i].Hash != localOperations[i].Hash)
                     {
-                        /* wykryto konflikt, jeszcze nie wiedomo kto ma racje */
+                        if (operations[i].Timestamp < localOperations[i].Timestamp)
+                        {
+                            for (int j = i; j < localOperations.Length; ++j)
+                            {
+                                UndoOperation(localOperations[j]);
+                            }
+                            int counter = localOperations.Length - i;
+                            _operationsLog.RemoveFromTop(counter);
+
+                            for (int j = i; j < operations.Length; ++j)
+                            {
+                                UpdateMissingOperation(operations[j]);
+                            }
+                            var missingConf = new List<Operation>(operations).GetRange(i, operations.Length - i).ToArray();
+                            _operationsLog.AddMissing(missingConf);
+
+                            maxSynchroTime = i > 0 ? operations[i - 1].Timestamp : 0;
+
+                            return SynchroResultType.FIXED;
+                        }
+
                         return SynchroResultType.CONFLICT;
                     }
                 }
 
-                if (operations.Length == opes.Length)
+                if (operations.Length == localOperations.Length)
                 {
-                    /* tyle samo operacji, ktore zostaly juz porownane, wiec wszystko ok */
-                    /* already sync */
                     return SynchroResultType.OK;
                 }
 
-                /* brak konfliktow */
-                if (opes.Length > operations.Length)
+                if (localOperations.Length > operations.Length)
                 {
-                    /* my posiadamy wiecej informacji niz tamten serwer, powiedz mu ze jest nieaktualny */
                     return SynchroResultType.U2OLD;
                 }
 
-                /* tU: sender ma wiecej operacji niz my, przy czym operacje wspolne nie koliduja */
-                int new_ope_idx = maxi;
-
-                /* tu iterujemy po tych operacjach i jakos je dodajemy */
-                for (int i = new_ope_idx; i < operations.Length; ++i)
+                for (int i = minLength; i < operations.Length; ++i)
                 {
                     UpdateMissingOperation(operations[i]);
                 }
-
-                var toAdd = new List<Operation>(operations).GetRange(new_ope_idx, operations.Length - new_ope_idx).ToArray();
+                var toAdd = new List<Operation>(operations).GetRange(minLength, operations.Length - minLength).ToArray();
                 _operationsLog.AddMissing(toAdd);
 
                 return SynchroResultType.OK;

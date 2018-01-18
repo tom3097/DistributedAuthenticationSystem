@@ -2,6 +2,7 @@
 using DistributedAuthSystem.Requests;
 using DistributedAuthSystem.Responses;
 using DistributedAuthSystem.Services;
+using DistributedAuthSystem.States;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -27,9 +28,11 @@ namespace DistributedAuthSystem.Controllers
 
         private readonly IServerInfoRepository _serverInfoRepository;
 
-        public static ManualResetEvent allDone = new ManualResetEvent(false);
+        private readonly JavaScriptSerializer _serializer;
 
-        private const int DefaultTimeout = 1 * 30 * 1000; // 30 sekund
+        private const int _timeout = 30000;
+
+        private const string _fatEndpoint = "private/synchro/fat";
 
         #endregion
 
@@ -42,9 +45,9 @@ namespace DistributedAuthSystem.Controllers
             _neighboursRepository = neighboursRepository;
             _synchronizationsRepository = synchronizationsRepository;
             _serverInfoRepository = serverInfoRepository;
+            _serializer = new JavaScriptSerializer();
         }
 
-        // Abort the request if the timer fires.
         private static void TimeoutCallback(object state, bool timedOut)
         {
             if (timedOut)
@@ -54,6 +57,70 @@ namespace DistributedAuthSystem.Controllers
                 {
                     request.Abort();
                 }
+            }
+        }
+
+        private void FatCallback(IAsyncResult ar)
+        {
+            RequestState requestState = (RequestState)ar.AsyncState;
+            WebRequest request = requestState.Request;
+            WebResponse response = request.EndGetResponse(ar);
+
+            FatSynchronizationRes fatResponse;
+
+            using (Stream stream = response.GetResponseStream())
+            {
+                StreamReader reader = new StreamReader(stream, Encoding.UTF8);
+                String responseString = reader.ReadToEnd();
+                fatResponse = _serializer.Deserialize<FatSynchronizationRes>(responseString);
+            }
+
+            if (fatResponse.Type != SynchroResultType.CONFLICT)
+            {
+                _synchronizationsRepository.UpdateTime(fatResponse.SenderId, fatResponse.SynchroTimestamp);
+                _synchronizationsRepository.UpdateSynchroTimes(fatResponse.SynchroTimes, fatResponse.SenderId,
+                    fatResponse.SynchroTimestamp);
+            }
+        }
+
+        private void SendFatRequest()
+        {
+            var neighbours = _neighboursRepository.GetAllNeighbours();
+            foreach (var neigh in neighbours)
+            {
+                Dictionary<string, long> synchroTimesCopy;
+                _synchronizationsRepository.GetSynchroTimesCopy(out synchroTimesCopy);
+
+                var fatRequest = new FatSynchronizationReq
+                {
+                    SenderId = _serverInfoRepository.GetServerId(),
+                    History = _clientsRepository.GetHistorySince(synchroTimesCopy[neigh.Id]),
+                    SynchroTimes = synchroTimesCopy
+                };
+
+                var data = _serializer.Serialize(fatRequest);
+                byte[] bytes = Encoding.UTF8.GetBytes(data);
+
+                WebRequest wreq = WebRequest.Create(neigh.Url + _fatEndpoint);
+                wreq.Method = "POST";
+                wreq.ContentType = "application/json";
+                wreq.ContentLength = bytes.Length;
+
+                using (var streamWriter = new StreamWriter(wreq.GetRequestStream()))
+                {
+                    streamWriter.Write(data);
+                    streamWriter.Flush();
+                    streamWriter.Close();
+                }
+
+                var requestState = new RequestState
+                {
+                    Request = wreq
+                };
+
+                IAsyncResult result = wreq.BeginGetResponse(new AsyncCallback(FatCallback), requestState);
+                ThreadPool.RegisterWaitForSingleObject(result.AsyncWaitHandle,
+                    new WaitOrTimerCallback(TimeoutCallback), wreq, _timeout, true);
             }
         }
 
@@ -74,85 +141,16 @@ namespace DistributedAuthSystem.Controllers
             return Request.CreateResponse(statusCode, client);
         }
 
-        private void RespCallback(IAsyncResult ar)
-        {
-            int a = 4;
-            WebRequest myWebRequest = (WebRequest)ar.AsyncState;
-            WebResponse resp = myWebRequest.EndGetResponse(ar);
-
-            FatSynchronizationRes fr;
-
-            using (Stream stream = resp.GetResponseStream())
-            {
-                StreamReader reader = new StreamReader(stream, Encoding.UTF8);
-                String responseString = reader.ReadToEnd();
-
-
-                JavaScriptSerializer _serializer = new JavaScriptSerializer();
-                fr = _serializer.Deserialize<FatSynchronizationRes>(responseString);
-            }
-
-            if (fr.Type == SynchroResultType.OK)
-            {
-                _synchronizationsRepository.UpdateSynchroTime(fr.SenderId, fr.SynchroTimestamp);
-            }
-
-        }
-
         [Route("")]
         [HttpPost]
         public HttpResponseMessage PostClient([FromBody] PostClientReq request)
         {
             var success = _clientsRepository.PostClient(request.Id, request.Pin);
-            var statusCode = success ? HttpStatusCode.Created : HttpStatusCode.Conflict;
             if (success)
             {
-                var neighbours = _neighboursRepository.GetAllNeighbours();
-                foreach (var neigh in neighbours)
-                {
-                    Dictionary<string, long> synchroTimesCopy;
-                    _synchronizationsRepository.GetSynchroTimesCopy(out synchroTimesCopy);
-                    var history = _clientsRepository.GetHistorySince(synchroTimesCopy[neigh.Id]);
-                    string senderId = _serverInfoRepository.GetServerId();
-
-                    var fatRequest = new FatSynchronizationReq
-                    {
-                        SenderId = senderId,
-                        History = history,
-                        SynchroTimes = synchroTimesCopy
-                    };
-                    JavaScriptSerializer _serializer = new JavaScriptSerializer();
-                    var data = _serializer.Serialize(fatRequest);
-                    byte[] bytes = Encoding.UTF8.GetBytes(data);
-
-                    // tu normalnie wysylanie na fat rt
-                    WebRequest wreq = WebRequest.Create(neigh.Url + "private/synchro/fat");
-                    wreq.Method = "POST";
-                    wreq.ContentType = "application/json";
-                    wreq.ContentLength = bytes.Length;
-
-                    using (var streamWriter = new StreamWriter(wreq.GetRequestStream()))
-                    {
-                        streamWriter.Write(data);
-                        streamWriter.Flush();
-                        streamWriter.Close();
-                    }
-
-                    /* opakowac jakos to wreq, nie wysylac bezposrednio */
-                    IAsyncResult result = wreq.BeginGetResponse(new AsyncCallback(RespCallback), wreq);
-
-                    ThreadPool.RegisterWaitForSingleObject(result.AsyncWaitHandle, new WaitOrTimerCallback(TimeoutCallback), wreq, DefaultTimeout, true);
-
-                    //dokmyslnie GET
-                    //wreq.Method =
-                    /* request przygotowany, teraz tylko wyslac */
-                }
-                // wysylamy wiadomosc do innych (fat requesta)
-                // synchronizedTo = _synchronizationRepo.get(serwerId);
-                // clientRepo.GetOperations(from=synchronizedTo);
-                // prepare FatRequest
-                // sendFatRequestAsynchronous
+                SendFatRequest();
             }
+            var statusCode = success ? HttpStatusCode.Created : HttpStatusCode.Conflict;
             return Request.CreateResponse(statusCode);
         }
 
@@ -162,6 +160,10 @@ namespace DistributedAuthSystem.Controllers
         {
             bool notFound;
             var success = _clientsRepository.DeleteClient(id, pin, out notFound);
+            if (success)
+            {
+                SendFatRequest();
+            }
             var statusCode = success ? HttpStatusCode.OK : notFound ? HttpStatusCode.NotFound : HttpStatusCode.Unauthorized;
             return Request.CreateResponse(statusCode);
         }
@@ -172,6 +174,10 @@ namespace DistributedAuthSystem.Controllers
         {
             bool notFound;
             var success = _clientsRepository.ChangeClientPin(id, request.CurrentPin, request.NewPin, out notFound);
+            if (success)
+            {
+                SendFatRequest();
+            }
             var statusCode = success ? HttpStatusCode.OK : notFound ? HttpStatusCode.NotFound : HttpStatusCode.Unauthorized;
             return Request.CreateResponse(statusCode);
         }
@@ -197,21 +203,29 @@ namespace DistributedAuthSystem.Controllers
         }
 
         [Route("{id:int}/authorize")]
-        [HttpGet]
+        [HttpPut]
         public HttpResponseMessage AuthorizeOperation([FromUri] int id, [FromBody] AuthorizaOperationReq request)
         {
             bool notFound;
             var success = _clientsRepository.AuthorizeOperation(id, request.Pin, request.OneTimePassword, out notFound);
+            if (success)
+            {
+                SendFatRequest();
+            }
             var statusCode = success ? HttpStatusCode.OK : notFound ? HttpStatusCode.NotFound : HttpStatusCode.Unauthorized;
             return Request.CreateResponse(statusCode);
         }
 
         [Route("{id:int}/activatelist")]
-        [HttpGet]
+        [HttpPut]
         public HttpResponseMessage ActivateNewPassList([FromUri] int id, [FromBody] ActivateNewPassListReq request)
         {
             bool notFound;
             var success = _clientsRepository.ActivateNewPassList(id, request.Pin, request.OneTimePassword, out notFound);
+            if (success)
+            {
+                SendFatRequest();
+            }
             var statusCode = success ? HttpStatusCode.OK : notFound ? HttpStatusCode.NotFound : HttpStatusCode.Unauthorized;
             return Request.CreateResponse(statusCode);
         }

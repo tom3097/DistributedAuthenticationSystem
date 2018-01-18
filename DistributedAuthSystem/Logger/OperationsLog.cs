@@ -31,7 +31,7 @@ namespace DistributedAuthSystem.Logger
             _lastHash = null;
         }
 
-        public void Add(OperationType operationType, string serializedData)
+        public void Add(OperationType operationType, string serialBefore, string serialAfter)
         {
             _lockSlim.EnterWriteLock();
             try
@@ -39,10 +39,11 @@ namespace DistributedAuthSystem.Logger
                 var operation = new Operation
                 {
                     Timestamp = GenerateTimestamp(),
-                    Hash = GenerateHash(operationType, serializedData),
+                    Hash = GenerateHash(operationType, serialBefore, serialAfter),
                     SequenceNumber = _history.Count,
                     Type = operationType,
-                    Data = serializedData
+                    DataBefore = serialBefore,
+                    DataAfter = serialAfter
                 };
                 _history.Add(operation);
                 _lastHash = operation.Hash;
@@ -59,10 +60,10 @@ namespace DistributedAuthSystem.Logger
                 new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds);
         }
 
-        private string GenerateHash(OperationType operationType, string serializedData)
+        private string GenerateHash(OperationType operationType, string serialBefore, string serialAfter)
         {
-            var plainText = String.Format("{0}{1}{2}", operationType.ToString(), serializedData,
-                _lastHash ?? "");
+            var plainText = String.Format("{0}{1}{2}{3}", operationType.ToString(), serialBefore,
+                serialAfter, _lastHash ?? "");
             byte[] data = Encoding.UTF8.GetBytes(plainText);
             using (HashAlgorithm sha = new SHA256Managed())
             {
@@ -118,6 +119,17 @@ namespace DistributedAuthSystem.Logger
                 _lockSlim.ExitWriteLock();
             }
         }
+
+        public void RemoveFromTop(int counter)
+        {
+            int index = _history.Count - counter;
+            _history.RemoveRange(index, counter);
+        }
+
+        public void RemoveFromBottom(int counter)
+        {
+        }
+
 
         #endregion
     }
