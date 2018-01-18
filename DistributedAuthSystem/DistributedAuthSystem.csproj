@@ -49,6 +49,9 @@
     <Reference Include="CommonServiceLocator, Version=2.0.2.0, Culture=neutral, PublicKeyToken=489b6accfaf20ef0, processorArchitecture=MSIL">
       <HintPath>..\packages\Unity.5.5.5\lib\net45\CommonServiceLocator.dll</HintPath>
     </Reference>
+    <Reference Include="FluentScheduler, Version=5.3.0.0, Culture=neutral, PublicKeyToken=b76503528a14ebd1, processorArchitecture=MSIL">
+      <HintPath>..\packages\FluentScheduler.5.3.0\lib\net40\FluentScheduler.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.CodeDom.Providers.DotNetCompilerPlatform, Version=1.0.3.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.1.0.3\lib\net45\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.dll</HintPath>
     </Reference>
@@ -230,6 +233,8 @@
     <Compile Include="Requests\ThinSynchronizationReq.cs" />
     <Compile Include="Resolver\UnityResolver.cs" />
     <Compile Include="Responses\FatSynchronizationRes.cs" />
+    <Compile Include="Scheduler\ThinRequestJob.cs" />
+    <Compile Include="Scheduler\ThinRequestScheduler.cs" />
     <Compile Include="Services\ClientsRepository.cs" />
     <Compile Include="Services\IClientsRepository.cs" />
     <Compile Include="Services\INeighboursRepository.cs" />
