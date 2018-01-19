@@ -187,12 +187,15 @@ namespace DistributedAuthSystem.Models
             {
                 if (synchroTimesCopy[neigh.Id] < lastOperationTsmp)
                 {
+                    long requestTimestamp = OperationsLog.GenerateTimestamp();
+
                     var thinRequest = new ThinSynchronizationReq
                     {
                         SenderId = _serverInfoRepository.GetServerId(),
                         LastHash = _clientsRepository.GetLastHash(),
                         SynchroTimestamp = _clientsRepository.GetLastOperationTsmp(),
-                        SynchroTimes = synchroTimesCopy
+                        SynchroTimes = synchroTimesCopy,
+                        RequestTimestamp = requestTimestamp
                     };
 
                     var data = _serializer.Serialize(thinRequest);

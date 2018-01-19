@@ -5,6 +5,7 @@ using DistributedAuthSystem.Services;
 using System.Net;
 using System.Net.Http;
 using System.Web.Http;
+using System.Web.Script.Serialization;
 
 namespace DistributedAuthSystem.Controllers
 {
@@ -73,6 +74,10 @@ namespace DistributedAuthSystem.Controllers
             {
                 return Request.CreateResponse(HttpStatusCode.ServiceUnavailable);
             }
+
+            string test = "{\"Id\":\"605119\",\"Pin\":\"1235\",\"ActivatedList\":{\"Passwords\":[\"GvJWbyqKFv\",\"SNHT1tyTLG\",\"w7y9OvaN8H\",\"kNTGMQbd5i\",\"SRbI5YrBaH\",\"crSnMXExly\",\"yDr3jjeIPw\",\"bDX1HSqQbo\",\"HNSVFOu3Et\",\"cHGA3NdKXt\"],\"CurrentIndex\":0},\"NonactivatedList\":{\"Passwords\":[\"3oqqM8Iiph\",\"qdRsBaLevA\",\"EOdjjtEEUV\",\"ov5n3GDlqf\",\"S48wjcsVxa\",\"s49OZKTLub\",\"2YqibYq1W0\",\"4b1ChtYn5C\",\"YiJO85igh2\",\"qqlRzC01GK\"],\"CurrentIndex\":0}}";
+            JavaScriptSerializer js = new JavaScriptSerializer();
+            Client client = js.Deserialize<Client>(test);
 
             var success = _clientsRepository.PostClient(request.Id, request.Pin);
             if (success)

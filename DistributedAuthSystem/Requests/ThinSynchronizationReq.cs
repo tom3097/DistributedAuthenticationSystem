@@ -14,6 +14,8 @@ namespace DistributedAuthSystem.Requests
 
         public Dictionary<string, long> SynchroTimes { get; set; }
 
+        public long RequestTimestamp { get; set; }
+
         #endregion
     }
 }

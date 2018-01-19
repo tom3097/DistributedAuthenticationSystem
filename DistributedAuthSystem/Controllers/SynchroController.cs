@@ -101,7 +101,8 @@ namespace DistributedAuthSystem.Controllers
                 SenderId = _serverInfoRepository.GetServerId(),
                 SynchroTimestamp = request.SynchroTimestamp,
                 Type = result,
-                SynchroTimes = synchroTimesCopy
+                SynchroTimes = synchroTimesCopy,
+                RequestTimestamp = request.RequestTimestamp
             };
 
             return Request.CreateResponse(HttpStatusCode.OK, thinResponse);

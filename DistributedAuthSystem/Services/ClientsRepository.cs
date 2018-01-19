@@ -79,8 +79,8 @@ namespace DistributedAuthSystem.Services
                     client.InitializePasswordLists();
                     _repository.Add(id, client);
 
-                    var serializedAfter = _serializer.Serialize(client);
-                    _operationsLog.Add(OperationType.ADD_CLIENT, null, serializedAfter);
+                    var clientAfter = client.DeepCopy();
+                    _operationsLog.Add(OperationType.ADDING_CLIENT, null, clientAfter);
 
                     return true;
                 }
@@ -107,8 +107,8 @@ namespace DistributedAuthSystem.Services
                     {
                         _repository.Remove(id);
 
-                        var serializedBefore = _serializer.Serialize(client);
-                        _operationsLog.Add(OperationType.DELETE_CLIENT, serializedBefore, null);
+                        var clientBefore = client.DeepCopy();
+                        _operationsLog.Add(OperationType.DELETE_CLIENT, clientBefore, null);
 
                         return true;
                     }
@@ -136,12 +136,12 @@ namespace DistributedAuthSystem.Services
 
                     if (client.Pin == currentPin)
                     {
-                        var serializedBefore = _serializer.Serialize(client);
+                        var clientBefore = client.DeepCopy();
 
                         client.Pin = newPin;
 
-                        var serializedAfter = _serializer.Serialize(client);
-                        _operationsLog.Add(OperationType.CHANGE_PASSWORD, serializedBefore, serializedAfter);
+                        var clientAfter = client.DeepCopy();
+                        _operationsLog.Add(OperationType.CHANGE_PASSWORD, clientBefore, clientAfter);
 
                         return true;
                     }
@@ -250,12 +250,12 @@ namespace DistributedAuthSystem.Services
                     if (client.Pin == pin && client.CanAuthorizeOperation() &&
                         client.CurrentActivePassword() == oneTimePassword)
                     {
-                        var serializedBefore = _serializer.Serialize(client);
+                        var clientBefore = client.DeepCopy();
 
                         client.UseCurrentActivePassword();
 
-                        var serializedAfter = _serializer.Serialize(client);
-                        _operationsLog.Add(OperationType.AUTHORIZATION, serializedBefore, serializedAfter);
+                        var clientAfter = client.DeepCopy();
+                        _operationsLog.Add(OperationType.AUTHORIZATION, clientBefore, clientAfter);
 
                         return true;
                     }
@@ -285,12 +285,12 @@ namespace DistributedAuthSystem.Services
                     if (client.Pin == pin && client.CanActivateNewPassList() &&
                         client.CurrentActivePassword() == oneTimePassword)
                     {
-                        var serializedBefore = _serializer.Serialize(client);
+                        var clientBefore = client.DeepCopy();
 
                         client.ActivateNewPassList();
 
-                        var serializedAfter = _serializer.Serialize(client);
-                        _operationsLog.Add(OperationType.LIST_ACTIVATION, serializedBefore, serializedAfter);
+                        var clientAfter = client.DeepCopy();
+                        _operationsLog.Add(OperationType.LIST_ACTIVATION, clientBefore, clientAfter);
 
                         return true;
                     }
@@ -322,14 +322,12 @@ namespace DistributedAuthSystem.Services
 
         private void UpdateMissingOperation(Operation operation)
         {
-            var clientBefore = operation.DataBefore == null ? null :
-                _serializer.Deserialize<Client>(operation.DataBefore);
-            var clientAfter = operation.DataAfter == null ? null :
-                _serializer.Deserialize<Client>(operation.DataAfter);
+            var clientBefore = operation.DataBefore;
+            var clientAfter = operation.DataAfter;
             string id = clientBefore == null ? clientAfter.Id : clientBefore.Id;
             switch (operation.Type)
             {
-                case OperationType.ADD_CLIENT:
+                case OperationType.ADDING_CLIENT:
                     _repository.Add(id, clientAfter);
                     break;
                 case OperationType.AUTHORIZATION:
@@ -349,14 +347,12 @@ namespace DistributedAuthSystem.Services
 
         private void UndoOperation(Operation operation)
         {
-            var clientBefore = operation.DataBefore == null ? null :
-                _serializer.Deserialize<Client>(operation.DataBefore);
-            var clientAfter = operation.DataAfter == null ? null :
-                _serializer.Deserialize<Client>(operation.DataAfter);
+            var clientBefore = operation.DataBefore;
+            var clientAfter = operation.DataAfter;
             string id = clientBefore == null ? clientAfter.Id : clientBefore.Id;
             switch (operation.Type)
             {
-                case OperationType.ADD_CLIENT:
+                case OperationType.ADDING_CLIENT:
                     _repository.Remove(id);
                     break;
                 case OperationType.AUTHORIZATION:
@@ -406,7 +402,9 @@ namespace DistributedAuthSystem.Services
                 Operation firstOpeBefore = _operationsLog.GetFirstOpeBefore(firstOpe.Timestamp);
                 if (firstOpeBefore != null)
                 {
-                    string continueHash = OperationsLog.GenerateHash(firstOpe.Type, firstOpe.DataBefore, firstOpe.DataAfter,
+                    var serialBefore = _serializer.Serialize(firstOpe.DataBefore);
+                    var serialAfter = _serializer.Serialize(firstOpe.DataAfter);
+                    string continueHash = OperationsLog.GenerateHash(firstOpe.Type, serialBefore, serialAfter,
                         firstOpeBefore.Hash);
 
                     if (continueHash != firstOpe.Hash)

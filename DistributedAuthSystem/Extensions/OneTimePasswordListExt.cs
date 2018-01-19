@@ -63,6 +63,21 @@ namespace DistributedAuthSystem.Extensions
             oneTimePasswordList.CurrentIndex += 1;
         }
 
+        public static OneTimePasswordList DeepCopy(this OneTimePasswordList oneTimePasswordList)
+        {
+            if (oneTimePasswordList == null)
+            {
+                return null;
+            }
+
+            OneTimePasswordList copy = new OneTimePasswordList();
+            string[] copyPass = new string[oneTimePasswordList.Passwords.Length];
+            Array.Copy(oneTimePasswordList.Passwords, copyPass, oneTimePasswordList.Passwords.Length);
+            copy.Passwords = copyPass;
+            copy.CurrentIndex = oneTimePasswordList.CurrentIndex;
+            return copy;
+        }
+
         public static bool CanAuthorizeOperation(this OneTimePasswordList oneTimePasswordList)
         {
             return oneTimePasswordList.CurrentIndex < _listSize - 1;

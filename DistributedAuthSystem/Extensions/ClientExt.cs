@@ -41,6 +41,21 @@ namespace DistributedAuthSystem.Extensions
             client.NonactivatedList.GeneratePasswords();
         }
 
+        public static Client DeepCopy(this Client client)
+        {
+            if (client == null)
+            {
+                return null;
+            }
+
+            Client copy = new Client();
+            copy.Id = client.Id;
+            copy.Pin = client.Pin;
+            copy.ActivatedList = client.ActivatedList.DeepCopy();
+            copy.NonactivatedList = client.NonactivatedList.DeepCopy();
+            return copy;
+        }
+
         #endregion
     }
 }

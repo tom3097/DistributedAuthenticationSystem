@@ -6,6 +6,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
+using System.Web.Script.Serialization;
 
 namespace DistributedAuthSystem.Logger
 {
@@ -14,6 +15,8 @@ namespace DistributedAuthSystem.Logger
         #region fields
 
         private readonly List<Operation> _history;
+
+        private readonly JavaScriptSerializer _serializer;
 
         private readonly ReaderWriterLockSlim _lockSlim;
 
@@ -26,23 +29,27 @@ namespace DistributedAuthSystem.Logger
         public OperationsLog()
         {
             _history = new List<Operation>();
+            _serializer = new JavaScriptSerializer();
             _lockSlim = new ReaderWriterLockSlim();
             _lastHash = null;
         }
 
-        public void Add(OperationType operationType, string serialBefore, string serialAfter)
+        public void Add(OperationType operationType, Client clientBefore, Client clientAfter)
         {
             _lockSlim.EnterWriteLock();
             try
             {
+                var serialBefore = _serializer.Serialize(clientBefore);
+                var serialAfter = _serializer.Serialize(clientAfter);
+
                 var operation = new Operation
                 {
                     Timestamp = GenerateTimestamp(),
                     Hash = GenerateHash(operationType, serialBefore, serialAfter, _lastHash),
                     SequenceNumber = _history.Count,
                     Type = operationType,
-                    DataBefore = serialBefore,
-                    DataAfter = serialAfter
+                    DataBefore = clientBefore,
+                    DataAfter = clientAfter
                 };
                 _history.Add(operation);
                 _lastHash = operation.Hash;
@@ -64,11 +71,15 @@ namespace DistributedAuthSystem.Logger
         {
             var plainText = String.Format("{0}{1}{2}{3}", operationType.ToString(), serialBefore,
                 serialAfter, lastHash ?? "");
+
             byte[] data = Encoding.UTF8.GetBytes(plainText);
+
             using (HashAlgorithm sha = new SHA256Managed())
             {
-                byte[] encryptedBytes = sha.TransformFinalBlock(data, 0, data.Length);
-                return Convert.ToBase64String(sha.Hash);
+                sha.ComputeHash(data);
+                string hex = BitConverter.ToString(sha.Hash).Replace("-", string.Empty);
+
+                return hex.ToLower();
             }
         }
 
