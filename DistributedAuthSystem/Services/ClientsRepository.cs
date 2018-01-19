@@ -80,7 +80,7 @@ namespace DistributedAuthSystem.Services
                     _repository.Add(id, client);
 
                     var clientAfter = client.DeepCopy();
-                    _operationsLog.Add(OperationType.ADDING_CLIENT, null, clientAfter);
+                    _operationsLog.Add(OperationType.ADD_CLIENT, null, clientAfter);
 
                     return true;
                 }
@@ -327,7 +327,7 @@ namespace DistributedAuthSystem.Services
             string id = clientBefore == null ? clientAfter.Id : clientBefore.Id;
             switch (operation.Type)
             {
-                case OperationType.ADDING_CLIENT:
+                case OperationType.ADD_CLIENT:
                     _repository.Add(id, clientAfter);
                     break;
                 case OperationType.AUTHORIZATION:
@@ -352,7 +352,7 @@ namespace DistributedAuthSystem.Services
             string id = clientBefore == null ? clientAfter.Id : clientBefore.Id;
             switch (operation.Type)
             {
-                case OperationType.ADDING_CLIENT:
+                case OperationType.ADD_CLIENT:
                     _repository.Remove(id);
                     break;
                 case OperationType.AUTHORIZATION:
@@ -404,8 +404,8 @@ namespace DistributedAuthSystem.Services
                 {
                     var serialBefore = _serializer.Serialize(firstOpe.DataBefore);
                     var serialAfter = _serializer.Serialize(firstOpe.DataAfter);
-                    string continueHash = OperationsLog.GenerateHash(firstOpe.Type, serialBefore, serialAfter,
-                        firstOpeBefore.Hash);
+                    string continueHash = OperationsLog.GenerateHash(firstOpe.Timestamp, firstOpe.Type,
+                        serialBefore, serialAfter, firstOpeBefore.Hash);
 
                     if (continueHash != firstOpe.Hash)
                     {

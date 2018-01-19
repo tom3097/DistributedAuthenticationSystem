@@ -42,10 +42,12 @@ namespace DistributedAuthSystem.Logger
                 var serialBefore = _serializer.Serialize(clientBefore);
                 var serialAfter = _serializer.Serialize(clientAfter);
 
+                var timestamp = GenerateTimestamp();
+
                 var operation = new Operation
                 {
-                    Timestamp = GenerateTimestamp(),
-                    Hash = GenerateHash(operationType, serialBefore, serialAfter, _lastHash),
+                    Timestamp = timestamp,
+                    Hash = GenerateHash(timestamp, operationType, serialBefore, serialAfter, _lastHash),
                     SequenceNumber = _history.Count,
                     Type = operationType,
                     DataBefore = clientBefore,
@@ -66,11 +68,11 @@ namespace DistributedAuthSystem.Logger
                 new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds);
         }
 
-        public static string GenerateHash(OperationType operationType, string serialBefore,
+        public static string GenerateHash(long timestamp, OperationType operationType, string serialBefore,
             string serialAfter, string lastHash)
         {
-            var plainText = String.Format("{0}{1}{2}{3}", operationType.ToString(), serialBefore,
-                serialAfter, lastHash ?? "");
+            var plainText = String.Format("{0}{1}{2}{3}{4}", timestamp.ToString(), operationType.ToString(),
+                serialBefore, serialAfter, lastHash ?? "");
 
             byte[] data = Encoding.UTF8.GetBytes(plainText);
 

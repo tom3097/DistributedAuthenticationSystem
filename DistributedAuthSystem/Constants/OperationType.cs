@@ -2,7 +2,7 @@
 {
     public enum OperationType
     {
-        ADDING_CLIENT,
+        ADD_CLIENT,
         DELETE_CLIENT,
         AUTHORIZATION,
         LIST_ACTIVATION,

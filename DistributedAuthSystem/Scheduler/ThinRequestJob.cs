@@ -40,7 +40,7 @@ namespace DistributedAuthSystem.Scheduler
 
                     if (_serverInfoRepository.GetServerState() == Constants.ServerState.IS_OK)
                     {
-                        _requestsMaker.SendThinRequestsToAll();
+                       // _requestsMaker.SendThinRequestsToAll();
                     }
                 }
             }
