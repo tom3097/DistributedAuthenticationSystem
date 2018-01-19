@@ -6,11 +6,11 @@ using System.Web;
 
 namespace DistributedAuthSystem.Responses
 {
-    public class FatSynchronizationRes
+    public class ThinSynchronizationRes
     {
         public string SenderId { get; set; }
 
-        public FatSynchroResult Type { get; set; }
+        public ThinSynchroResult Type { get; set; }
 
         public long SynchroTimestamp { get; set; }
 

@@ -40,18 +40,18 @@ namespace DistributedAuthSystem.Controllers
         {
             long maxSyncTime;
             var result = _clientsRepository.UpdateHistory(request.History, out maxSyncTime);
-            if (result == SynchroResultType.FIXED)
+            if (result == FatSynchroResult.FIXED)
             {
                 _synchronizationsRepository.FixSynchroTimes(maxSyncTime);
             }
 
-            if (result != SynchroResultType.CONFLICT)
+            if (result != FatSynchroResult.CONFLICT)
             {
                 _synchronizationsRepository.UpdateSynchroTimes(request.SynchroTimes, request.SenderId,
                     request.History.Last().Timestamp);
             }
 
-            var statusCode = result == SynchroResultType.CONFLICT || result == SynchroResultType.U2OLD ?
+            var statusCode = result == FatSynchroResult.CONFLICT || result == FatSynchroResult.U2OLD ?
                 HttpStatusCode.SeeOther : HttpStatusCode.OK;
 
             Dictionary<string, long> synchroTimesCopy;
@@ -72,7 +72,31 @@ namespace DistributedAuthSystem.Controllers
         [HttpPost]
         public HttpResponseMessage ThinSynchronization([FromBody] ThinSynchronizationReq request)
         {
-            return Request.CreateResponse(HttpStatusCode.ServiceUnavailable);
+            ThinSynchroResult result;
+            if (request.LastHash == _clientsRepository.GetLastHash())
+            {
+                result = ThinSynchroResult.ALREADY_SYNC;
+
+                _synchronizationsRepository.UpdateSynchroTimes(request.SynchroTimes, request.SenderId,
+                    request.SynchroTimestamp);
+            }
+            else
+            {
+                result = ThinSynchroResult.NEED_SYNC;
+            }
+
+            Dictionary<string, long> synchroTimesCopy;
+            _synchronizationsRepository.GetSynchroTimesCopy(out synchroTimesCopy);
+
+            var thinResponse = new ThinSynchronizationRes
+            {
+                SenderId = _serverInfoRepository.GetServerId(),
+                SynchroTimestamp = request.SynchroTimestamp,
+                Type = result,
+                SynchroTimes = synchroTimesCopy
+            };
+
+            return Request.CreateResponse(HttpStatusCode.OK, thinResponse);
         }
 
         #endregion

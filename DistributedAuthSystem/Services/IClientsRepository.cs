@@ -32,7 +32,11 @@ namespace DistributedAuthSystem.Services
 
         Operation[] GetHistorySince(long timestamp);
 
-        SynchroResultType UpdateHistory(Operation[] operations, out long maxSynchroTime);
+        FatSynchroResult UpdateHistory(Operation[] operations, out long maxSynchroTime);
+
+        long GetLastOperationTsmp();
+
+        string GetLastHash();
 
         #endregion
     }

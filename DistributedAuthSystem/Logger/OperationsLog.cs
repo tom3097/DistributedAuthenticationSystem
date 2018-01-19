@@ -106,6 +106,19 @@ namespace DistributedAuthSystem.Logger
             }
         }
 
+        public long GetLastTimestamp()
+        {
+            _lockSlim.EnterReadLock();
+            try
+            {
+                return _history.Count != 0 ? _history.Last().Timestamp : 0;
+            }
+            finally
+            {
+                _lockSlim.ExitReadLock();
+            }
+        }
+
         public void AddMissing(Operation[] operations)
         {
             _lockSlim.EnterWriteLock();

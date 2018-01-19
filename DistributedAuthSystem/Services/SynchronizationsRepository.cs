@@ -94,7 +94,7 @@ namespace DistributedAuthSystem.Services
         {
             foreach (var key in _synchroTimes.Keys.ToList())
             {
-                if (key == sourceId)
+                if (key == sourceId || !synchroTimesSource.ContainsKey(key))
                 {
                     continue;
                 }

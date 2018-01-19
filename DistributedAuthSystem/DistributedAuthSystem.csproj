@@ -206,7 +206,8 @@
     <Compile Include="Areas\HelpPage\SampleGeneration\TextSample.cs" />
     <Compile Include="Areas\HelpPage\XmlDocumentationProvider.cs" />
     <Compile Include="Constants\OperationType.cs" />
-    <Compile Include="Constants\SynchroResultType.cs" />
+    <Compile Include="Constants\FatSynchroResult.cs" />
+    <Compile Include="Constants\ThinSynchroResult.cs" />
     <Compile Include="Controllers\ClientsController.cs" />
     <Compile Include="Controllers\ServerInfoController.cs" />
     <Compile Include="Controllers\SynchroController.cs" />
@@ -220,6 +221,7 @@
     </Compile>
     <Compile Include="Logger\OperationsLog.cs" />
     <Compile Include="Models\Client.cs" />
+    <Compile Include="Models\RequestsMaker.cs" />
     <Compile Include="Models\Neighbour.cs" />
     <Compile Include="Models\OneTimePasswordList.cs" />
     <Compile Include="Models\Operation.cs" />
@@ -233,6 +235,7 @@
     <Compile Include="Requests\ThinSynchronizationReq.cs" />
     <Compile Include="Resolver\UnityResolver.cs" />
     <Compile Include="Responses\FatSynchronizationRes.cs" />
+    <Compile Include="Responses\ThinSynchronizationRes.cs" />
     <Compile Include="Scheduler\ThinRequestJob.cs" />
     <Compile Include="Scheduler\ThinRequestScheduler.cs" />
     <Compile Include="Services\ClientsRepository.cs" />

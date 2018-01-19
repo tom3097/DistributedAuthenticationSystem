@@ -347,7 +347,7 @@ namespace DistributedAuthSystem.Services
             }
         }
 
-        public SynchroResultType UpdateHistory(Operation[] operations, out long maxSynchroTime)
+        public FatSynchroResult UpdateHistory(Operation[] operations, out long maxSynchroTime)
         {
             maxSynchroTime = -1;
 
@@ -356,7 +356,7 @@ namespace DistributedAuthSystem.Services
             {
                 if (_operationsLog.GetLastHash() == operations.Last().Hash)
                 {
-                    return SynchroResultType.ALREADY_SYNC;
+                    return FatSynchroResult.ALREADY_SYNC;
                 }
 
                 var firstOpeTimestamp = operations.First().Timestamp;
@@ -385,21 +385,21 @@ namespace DistributedAuthSystem.Services
 
                             maxSynchroTime = i > 0 ? operations[i - 1].Timestamp : 0;
 
-                            return SynchroResultType.FIXED;
+                            return FatSynchroResult.FIXED;
                         }
 
-                        return SynchroResultType.CONFLICT;
+                        return FatSynchroResult.CONFLICT;
                     }
                 }
 
                 if (operations.Length == localOperations.Length)
                 {
-                    return SynchroResultType.OK;
+                    return FatSynchroResult.OK;
                 }
 
                 if (localOperations.Length > operations.Length)
                 {
-                    return SynchroResultType.U2OLD;
+                    return FatSynchroResult.U2OLD;
                 }
 
                 for (int i = minLength; i < operations.Length; ++i)
@@ -409,12 +409,22 @@ namespace DistributedAuthSystem.Services
                 var toAdd = new List<Operation>(operations).GetRange(minLength, operations.Length - minLength).ToArray();
                 _operationsLog.AddMissing(toAdd);
 
-                return SynchroResultType.OK;
+                return FatSynchroResult.OK;
             }
             finally
             {
                 _lockSlim.ExitWriteLock();
             }
+        }
+
+        public long GetLastOperationTsmp()
+        {
+            return _operationsLog.GetLastTimestamp();
+        }
+
+        public string GetLastHash()
+        {
+            return _operationsLog.GetLastHash();
         }
 
         #endregion

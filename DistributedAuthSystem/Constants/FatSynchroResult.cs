@@ -5,7 +5,7 @@ using System.Web;
 
 namespace DistributedAuthSystem.Constants
 {
-    public enum SynchroResultType
+    public enum FatSynchroResult
     {
         OK,
         ALREADY_SYNC,
