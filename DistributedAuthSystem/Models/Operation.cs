@@ -1,14 +1,10 @@
 ﻿using DistributedAuthSystem.Constants;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web;
 
 namespace DistributedAuthSystem.Models
 {
     public class Operation
     {
-        #region fields
+        #region properties
 
         public long Timestamp { get; set; }
 

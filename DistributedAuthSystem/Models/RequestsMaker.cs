@@ -7,17 +7,17 @@ using DistributedAuthSystem.States;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading;
-using System.Web;
 using System.Web.Script.Serialization;
 
 namespace DistributedAuthSystem.Models
 {
     public class RequestsMaker
     {
+        #region fields
+
         private readonly IClientsRepository _clientsRepository;
 
         private readonly INeighboursRepository _neighboursRepository;
@@ -28,7 +28,7 @@ namespace DistributedAuthSystem.Models
 
         private readonly JavaScriptSerializer _serializer;
 
-        private const int _timeout = 30000;
+        private const int _asyncReqtimeout = 30000;
 
         private const int _checkPassTimeout = 30000;
 
@@ -37,6 +37,10 @@ namespace DistributedAuthSystem.Models
         private const string _fatEndpoint = "private/synchro/fat";
 
         private const string _checkPassEndpoint = "public/clients/{0}/checkpass";
+
+        #endregion
+
+        #region methods
 
         public RequestsMaker(IClientsRepository clientsRepository, INeighboursRepository neighboursRepository,
             ISynchronizationsRepository synchronizationsRepository, IServerInfoRepository serverInfoRepository)
@@ -133,7 +137,7 @@ namespace DistributedAuthSystem.Models
 
             IAsyncResult result = wreq.BeginGetResponse(new AsyncCallback(FatCallback), requestState);
             ThreadPool.RegisterWaitForSingleObject(result.AsyncWaitHandle,
-                    new WaitOrTimerCallback(TimeoutCallback), wreq, _timeout, true);
+                    new WaitOrTimerCallback(TimeoutCallback), wreq, _asyncReqtimeout, true);
         }
 
         public void SendFatRequestsToAll()
@@ -213,7 +217,7 @@ namespace DistributedAuthSystem.Models
 
                     IAsyncResult result = wreq.BeginGetResponse(new AsyncCallback(ThinCallback), requestState);
                     ThreadPool.RegisterWaitForSingleObject(result.AsyncWaitHandle,
-                                    new WaitOrTimerCallback(TimeoutCallback), wreq, _timeout, true);
+                                    new WaitOrTimerCallback(TimeoutCallback), wreq, _asyncReqtimeout, true);
                 }
             }
         }
@@ -263,5 +267,7 @@ namespace DistributedAuthSystem.Models
 
             return true;
         }
+
+        #endregion
     }
 }

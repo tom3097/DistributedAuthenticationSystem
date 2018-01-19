@@ -220,8 +220,7 @@ namespace DistributedAuthSystem.Services
                 {
                     notFound = false;
 
-                    if (client.Pin == pin && client.CanAuthorizeOperation() &&
-                        client.CurrentActivePassword() == oneTimePassword)
+                    if (client.Pin == pin && client.CurrentActivePassword() == oneTimePassword)
                     {
                         return true;
                     }

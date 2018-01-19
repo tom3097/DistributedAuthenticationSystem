@@ -16,13 +16,15 @@ namespace DistributedAuthSystem.Extensions
 
         private const int _passwordLength = 10;
 
+        private const int _seed = 412;
+
         #endregion
 
         #region methods
 
         static OneTimePasswordListExt()
         {
-            _random = new Random();
+            _random = new Random(_seed);
         }
 
         private static string RandomString(int length)

@@ -6,7 +6,6 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
-using System.Web;
 
 namespace DistributedAuthSystem.Logger
 {
@@ -141,8 +140,8 @@ namespace DistributedAuthSystem.Logger
 
         public void RemoveFromBottom(int counter)
         {
+            /* @toDo */
         }
-
 
         #endregion
     }

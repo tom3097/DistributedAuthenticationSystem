@@ -3,7 +3,6 @@ using DistributedAuthSystem.Logger;
 using DistributedAuthSystem.Requests;
 using DistributedAuthSystem.Responses;
 using DistributedAuthSystem.Services;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;

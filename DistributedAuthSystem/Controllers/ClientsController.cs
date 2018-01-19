@@ -1,18 +1,10 @@
 ﻿using DistributedAuthSystem.Constants;
 using DistributedAuthSystem.Models;
 using DistributedAuthSystem.Requests;
-using DistributedAuthSystem.Responses;
 using DistributedAuthSystem.Services;
-using DistributedAuthSystem.States;
-using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Net;
 using System.Net.Http;
-using System.Text;
-using System.Threading;
 using System.Web.Http;
-using System.Web.Script.Serialization;
 
 namespace DistributedAuthSystem.Controllers
 {

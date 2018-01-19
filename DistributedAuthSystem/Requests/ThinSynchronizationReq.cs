@@ -1,12 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web;
+﻿using System.Collections.Generic;
 
 namespace DistributedAuthSystem.Requests
 {
     public class ThinSynchronizationReq
     {
+        #region properties
+
         public string SenderId { get; set; }
 
         public string LastHash { get; set; }
@@ -14,5 +13,7 @@ namespace DistributedAuthSystem.Requests
         public long SynchroTimestamp { get; set; }
 
         public Dictionary<string, long> SynchroTimes { get; set; }
+
+        #endregion
     }
 }

@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web;
-using FluentScheduler;
+﻿using FluentScheduler;
 using Unity;
 using System.Web.Http;
 using DistributedAuthSystem.Services;
@@ -12,6 +8,8 @@ namespace DistributedAuthSystem.Scheduler
 {
     public class ThinRequestScheduler : Registry
     {
+        #region methods
+
         public ThinRequestScheduler()
         {
             var container = (IUnityContainer)GlobalConfiguration.Configuration.DependencyResolver.GetService(typeof(IUnityContainer));
@@ -23,5 +21,7 @@ namespace DistributedAuthSystem.Scheduler
                 synchronizationRepository, serverInfoRepository);
             Schedule(() => new ThinRequestJob(requestsMaker)).ToRunNow().AndEvery(30).Seconds();
         }
+
+        #endregion
     }
 }

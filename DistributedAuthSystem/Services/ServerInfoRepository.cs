@@ -1,9 +1,6 @@
 ﻿using DistributedAuthSystem.Constants;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
-using System.Web;
 
 namespace DistributedAuthSystem.Services
 {
@@ -17,7 +14,7 @@ namespace DistributedAuthSystem.Services
 
         private long _lastFatSynchro;
 
-        private readonly ReaderWriterLockSlim _lockSlim;
+        private readonly ReaderWriterLockSlim _lockSlimId;
 
         private readonly ReaderWriterLockSlim _lockSlimState;
 
@@ -32,27 +29,27 @@ namespace DistributedAuthSystem.Services
             _id = null;
             _state = ServerState.IS_OK;
             _lastFatSynchro = 0;
-            _lockSlim = new ReaderWriterLockSlim();
+            _lockSlimId = new ReaderWriterLockSlim();
             _lockSlimState = new ReaderWriterLockSlim();
             _lockSlimFatSynchro = new ReaderWriterLockSlim();
         }
 
         public string GetServerId()
         {
-            _lockSlim.EnterReadLock();
+            _lockSlimId.EnterReadLock();
             try
             {
                 return _id;
             }
             finally
             {
-                _lockSlim.ExitReadLock();
+                _lockSlimId.ExitReadLock();
             }
         }
 
         public bool PutServerId(string id)
         {
-            _lockSlim.EnterWriteLock();
+            _lockSlimId.EnterWriteLock();
             try
             {
                 if (String.IsNullOrEmpty(_id))
@@ -65,7 +62,7 @@ namespace DistributedAuthSystem.Services
             }
             finally
             {
-                _lockSlim.ExitWriteLock();
+                _lockSlimId.ExitWriteLock();
             }
         }
 

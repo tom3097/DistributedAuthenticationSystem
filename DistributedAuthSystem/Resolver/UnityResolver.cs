@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Web;
 using System.Web.Http.Dependencies;
 using Unity;
 using Unity.Exceptions;
@@ -10,13 +8,19 @@ namespace DistributedAuthSystem.Resolver
 {
     public class UnityResolver : IDependencyResolver
     {
+        #region fields
+
         protected IUnityContainer container;
+
+        #endregion
+
+        #region methods
 
         public UnityResolver(IUnityContainer container)
         {
             if (container == null)
             {
-                throw new ArgumentNullException("container");
+                throw new ArgumentNullException("unityContainer");
             }
             this.container = container;
         }
@@ -60,5 +64,7 @@ namespace DistributedAuthSystem.Resolver
         {
             container.Dispose();
         }
+
+        #endregion
     }
 }
