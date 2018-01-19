@@ -50,7 +50,7 @@ namespace DistributedAuthSystem.Services
             }
             finally
             {
-                _lockSlim.ExitReadLock();
+                _lockSlim.ExitWriteLock();
             }
         }
 
@@ -90,29 +90,45 @@ namespace DistributedAuthSystem.Services
         public void UpdateSynchroTimes(Dictionary<string, long> synchroTimesSource, string sourceId,
             long synchroToTime)
         {
-            foreach (var key in _synchroTimes.Keys.ToList())
+            _lockSlim.EnterWriteLock();
+            try
             {
-                if (key == sourceId || !synchroTimesSource.ContainsKey(key))
+                foreach (var key in _synchroTimes.Keys.ToList())
                 {
-                    continue;
-                }
+                    if (key == sourceId || !synchroTimesSource.ContainsKey(key))
+                    {
+                        continue;
+                    }
 
-                if (_synchroTimes[key] < synchroTimesSource[key])
-                {
-                    _synchroTimes[key] = synchroTimesSource[key] > synchroToTime
-                        ? synchroToTime : synchroTimesSource[key];
+                    if (_synchroTimes[key] < synchroTimesSource[key])
+                    {
+                        _synchroTimes[key] = synchroTimesSource[key] > synchroToTime
+                            ? synchroToTime : synchroTimesSource[key];
+                    }
                 }
+            }
+            finally
+            {
+                _lockSlim.ExitWriteLock();
             }
         }
 
         public void FixSynchroTimes(long maxSynchroTime)
         {
-            foreach (var key in _synchroTimes.Keys.ToList())
+            _lockSlim.EnterWriteLock();
+            try
             {
-                if (_synchroTimes[key] > maxSynchroTime)
+                foreach (var key in _synchroTimes.Keys.ToList())
                 {
-                    _synchroTimes[key] = maxSynchroTime;
+                    if (_synchroTimes[key] > maxSynchroTime)
+                    {
+                        _synchroTimes[key] = maxSynchroTime;
+                    }
                 }
+            }
+            finally
+            {
+                _lockSlim.ExitWriteLock();
             }
         }
 
