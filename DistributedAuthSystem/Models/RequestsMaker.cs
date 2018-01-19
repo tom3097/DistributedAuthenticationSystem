@@ -256,9 +256,7 @@ namespace DistributedAuthSystem.Models
                 }
 
                 WebResponse response = wreq.GetResponse();
-
                 var statusCode = ((HttpWebResponse)response).StatusCode;
-
                 if (statusCode == HttpStatusCode.Unauthorized)
                 {
                     return false;
