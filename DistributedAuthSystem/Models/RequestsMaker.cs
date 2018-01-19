@@ -30,9 +30,13 @@ namespace DistributedAuthSystem.Models
 
         private const int _timeout = 30000;
 
+        private const int _checkPassTimeout = 30000;
+
         private const string _thinEndpoint = "private/synchro/thin";
 
         private const string _fatEndpoint = "private/synchro/fat";
+
+        private const string _checkPassEndpoint = "public/clients/{0}/checkpass";
 
         public RequestsMaker(IClientsRepository clientsRepository, INeighboursRepository neighboursRepository,
             ISynchronizationsRepository synchronizationsRepository, IServerInfoRepository serverInfoRepository)
@@ -212,6 +216,52 @@ namespace DistributedAuthSystem.Models
                                     new WaitOrTimerCallback(TimeoutCallback), wreq, _timeout, true);
                 }
             }
+        }
+
+        public bool CheckCurrentPassword(string id, string pin, string oneTimePassword)
+        {
+            var neighbours = _neighboursRepository.GetAllNeighbours();
+            foreach (var neigh in neighbours)
+            {
+                if (!neigh.IsSpecial)
+                {
+                    continue;
+                }
+
+                var authPasswordRequest = new AuthPasswordReq
+                {
+                    Pin = pin,
+                    OneTimePassword = oneTimePassword
+                };
+
+                var data = _serializer.Serialize(authPasswordRequest);
+                byte[] bytes = Encoding.UTF8.GetBytes(data);
+
+                WebRequest wreq = WebRequest.Create(neigh.Url + String.Format(_checkPassEndpoint, id.ToString()));
+                wreq.Method = "POST";
+                wreq.ContentType = "application/json";
+                wreq.ContentLength = bytes.Length;
+                /* uncomment in release build */
+                //wreq.Timeout = _checkPassTimeout;
+
+                using (var streamWriter = new StreamWriter(wreq.GetRequestStream()))
+                {
+                    streamWriter.Write(data);
+                    streamWriter.Flush();
+                    streamWriter.Close();
+                }
+
+                WebResponse response = wreq.GetResponse();
+
+                var statusCode = ((HttpWebResponse)response).StatusCode;
+
+                if (statusCode == HttpStatusCode.Unauthorized)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
     }
 }

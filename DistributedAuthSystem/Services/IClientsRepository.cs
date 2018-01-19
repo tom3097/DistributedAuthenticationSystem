@@ -14,21 +14,23 @@ namespace DistributedAuthSystem.Services
 
         Client[] GetAllClients();
 
-        Client GetSingleClient(int id);
+        Client GetSingleClient(string id);
 
-        bool PostClient(int id, int pin);
+        bool PostClient(string id, string pin);
 
-        bool DeleteClient(int id, int pin, out bool notFound);
+        bool DeleteClient(string id, string pin, out bool notFound);
 
-        bool ChangeClientPin(int id, int currentPin, int newPin, out bool notFound);
+        bool ChangeClientPin(string id, string currentPin, string newPin, out bool notFound);
 
-        bool AuthenticateClient(int id, int pin, out bool notFound);
+        bool AuthenticateClient(string id, string pin, out bool notFound);
 
-        OneTimePasswordList GetClientPassList(int id, int pin, out bool notFound);
+        OneTimePasswordList GetClientPassList(string id, string pin, out bool notFound);
 
-        bool AuthorizeOperation(int id, int pin, string oneTimePassword, out bool notFound);
+        bool CheckCurrentPassword(string id, string pin, string oneTimePassword, out bool notFound);
 
-        bool ActivateNewPassList(int id, int pin, string oneTimePassword, out bool notFound);
+        bool AuthorizeOperation(string id, string pin, string oneTimePassword, out bool notFound);
+
+        bool ActivateNewPassList(string id, string pin, string oneTimePassword, out bool notFound);
 
         Operation[] GetHistorySince(long timestamp);
 

@@ -4,9 +4,9 @@
     {
         #region properties
 
-        public int CurrentPin { get; set; }
+        public string CurrentPin { get; set; }
 
-        public int NewPin { get; set; }
+        public string NewPin { get; set; }
 
         #endregion
     }

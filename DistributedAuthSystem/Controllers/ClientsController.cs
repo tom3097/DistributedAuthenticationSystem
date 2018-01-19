@@ -59,9 +59,9 @@ namespace DistributedAuthSystem.Controllers
             return Request.CreateResponse(HttpStatusCode.OK, clients);
         }
 
-        [Route("{id:int}")]
+        [Route("{id}")]
         [HttpGet]
-        public HttpResponseMessage GetSingleClient([FromUri] int id)
+        public HttpResponseMessage GetSingleClient([FromUri] string id)
         {
             if (_serverInfoRepository.GetServerState() != ServerState.IS_OK)
             {
@@ -91,9 +91,9 @@ namespace DistributedAuthSystem.Controllers
             return Request.CreateResponse(statusCode);
         }
 
-        [Route("{id:int}")]
+        [Route("{id}")]
         [HttpDelete]
-        public HttpResponseMessage DeleteClient([FromUri] int id, [FromBody] int pin)
+        public HttpResponseMessage DeleteClient([FromUri] string id, [FromBody] string pin)
         {
             if (_serverInfoRepository.GetServerState() != ServerState.IS_OK)
             {
@@ -110,9 +110,9 @@ namespace DistributedAuthSystem.Controllers
             return Request.CreateResponse(statusCode);
         }
 
-        [Route("{id:int}")]
+        [Route("{id}")]
         [HttpPut]
-        public HttpResponseMessage ChangeClientPin([FromUri] int id, [FromBody] ChangeClientPinReq request)
+        public HttpResponseMessage ChangeClientPin([FromUri] string id, [FromBody] ChangeClientPinReq request)
         {
             if (_serverInfoRepository.GetServerState() != ServerState.IS_OK)
             {
@@ -129,9 +129,9 @@ namespace DistributedAuthSystem.Controllers
             return Request.CreateResponse(statusCode);
         }
 
-        [Route("{id:int}/authenticate")]
+        [Route("{id}/authenticate")]
         [HttpGet]
-        public HttpResponseMessage AuthenticateClient([FromUri] int id, [FromBody] int pin)
+        public HttpResponseMessage AuthenticateClient([FromUri] string id, [FromBody] string pin)
         {
             if (_serverInfoRepository.GetServerState() != ServerState.IS_OK)
             {
@@ -144,9 +144,9 @@ namespace DistributedAuthSystem.Controllers
             return Request.CreateResponse(statusCode);
         }
 
-        [Route("{id:int}/passlist")]
+        [Route("{id}/passlist")]
         [HttpGet]
-        public HttpResponseMessage GetClientPassList([FromUri] int id, [FromBody] int pin)
+        public HttpResponseMessage GetClientPassList([FromUri] string id, [FromBody] string pin)
         {
             if (_serverInfoRepository.GetServerState() != ServerState.IS_OK)
             {
@@ -159,9 +159,21 @@ namespace DistributedAuthSystem.Controllers
             return Request.CreateResponse(statusCode, passwordList);
         }
 
-        [Route("{id:int}/authorize")]
+        [Route("{id}/checkpass")]
+        [HttpPost]
+        public HttpResponseMessage CheckCurrentPassword([FromUri] string id, [FromBody] AuthPasswordReq request)
+        {
+            bool notFound;
+            var success = _clientsRepository.CheckCurrentPassword(id, request.Pin,
+                request.OneTimePassword, out notFound);
+
+            var statusCode = success ? HttpStatusCode.OK : HttpStatusCode.Unauthorized;
+            return Request.CreateResponse(statusCode);
+        }
+
+        [Route("{id}/authorize")]
         [HttpPut]
-        public HttpResponseMessage AuthorizeOperation([FromUri] int id, [FromBody] AuthorizaOperationReq request)
+        public HttpResponseMessage AuthorizeOperation([FromUri] string id, [FromBody] AuthPasswordReq request)
         {
             if (_serverInfoRepository.GetServerState() != ServerState.IS_OK)
             {
@@ -169,18 +181,33 @@ namespace DistributedAuthSystem.Controllers
             }
 
             bool notFound;
+            HttpStatusCode statusCode;
+            var canAuthorize = _clientsRepository.CheckCurrentPassword(id, request.Pin,
+                request.OneTimePassword, out notFound);
+            if (!canAuthorize)
+            {
+                statusCode = notFound ? HttpStatusCode.NotFound : HttpStatusCode.Unauthorized;
+                return Request.CreateResponse(statusCode);
+            }
+            canAuthorize = _requestsMaker.CheckCurrentPassword(id, request.Pin, request.OneTimePassword);
+            if (!canAuthorize)
+            {
+                statusCode = notFound ? HttpStatusCode.NotFound : HttpStatusCode.Unauthorized;
+                return Request.CreateResponse(statusCode);
+            }
+
             var success = _clientsRepository.AuthorizeOperation(id, request.Pin, request.OneTimePassword, out notFound);
             if (success)
             {
                 _requestsMaker.SendFatRequestsToAll();
             }
-            var statusCode = success ? HttpStatusCode.OK : notFound ? HttpStatusCode.NotFound : HttpStatusCode.Unauthorized;
+            statusCode = success ? HttpStatusCode.OK : notFound ? HttpStatusCode.NotFound : HttpStatusCode.Unauthorized;
             return Request.CreateResponse(statusCode);
         }
 
-        [Route("{id:int}/activatelist")]
+        [Route("{id}/activatelist")]
         [HttpPut]
-        public HttpResponseMessage ActivateNewPassList([FromUri] int id, [FromBody] ActivateNewPassListReq request)
+        public HttpResponseMessage ActivateNewPassList([FromUri] string id, [FromBody] AuthPasswordReq request)
         {
             if (_serverInfoRepository.GetServerState() != ServerState.IS_OK)
             {
@@ -188,12 +215,27 @@ namespace DistributedAuthSystem.Controllers
             }
 
             bool notFound;
+            HttpStatusCode statusCode;
+            var canAuthorize = _clientsRepository.CheckCurrentPassword(id, request.Pin,
+                request.OneTimePassword, out notFound);
+            if (!canAuthorize)
+            {
+                statusCode = notFound ? HttpStatusCode.NotFound : HttpStatusCode.Unauthorized;
+                return Request.CreateResponse(statusCode);
+            }
+            canAuthorize = _requestsMaker.CheckCurrentPassword(id, request.Pin, request.OneTimePassword);
+            if (!canAuthorize)
+            {
+                statusCode = notFound ? HttpStatusCode.NotFound : HttpStatusCode.Unauthorized;
+                return Request.CreateResponse(statusCode);
+            }
+
             var success = _clientsRepository.ActivateNewPassList(id, request.Pin, request.OneTimePassword, out notFound);
             if (success)
             {
                 _requestsMaker.SendFatRequestsToAll();
             }
-            var statusCode = success ? HttpStatusCode.OK : notFound ? HttpStatusCode.NotFound : HttpStatusCode.Unauthorized;
+            statusCode = success ? HttpStatusCode.OK : notFound ? HttpStatusCode.NotFound : HttpStatusCode.Unauthorized;
             return Request.CreateResponse(statusCode);
         }
 

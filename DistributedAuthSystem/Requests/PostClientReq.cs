@@ -4,9 +4,9 @@
     {
         #region properties
 
-        public int Id { get; set; }
+        public string Id { get; set; }
 
-        public int Pin { get; set; }
+        public string Pin { get; set; }
 
         #endregion
     }

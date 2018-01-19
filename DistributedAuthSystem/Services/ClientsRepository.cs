@@ -13,7 +13,7 @@ namespace DistributedAuthSystem.Services
     {
         #region fields
 
-        private Dictionary<int, Client> _repository;
+        private Dictionary<string, Client> _repository;
 
         private readonly ReaderWriterLockSlim _lockSlim;
 
@@ -27,7 +27,7 @@ namespace DistributedAuthSystem.Services
 
         public ClientsRepository()
         {
-            _repository = new Dictionary<int, Client>();
+            _repository = new Dictionary<string, Client>();
             _lockSlim = new ReaderWriterLockSlim();
             _serializer = new JavaScriptSerializer();
             _operationsLog = new OperationsLog();
@@ -46,7 +46,7 @@ namespace DistributedAuthSystem.Services
             }
         }
 
-        public Client GetSingleClient(int id)
+        public Client GetSingleClient(string id)
         {
             Client client;
             bool success;
@@ -64,7 +64,7 @@ namespace DistributedAuthSystem.Services
             return success ? client : null;
         }
 
-        public bool PostClient(int id, int pin)
+        public bool PostClient(string id, string pin)
         {
             _lockSlim.EnterWriteLock();
             try
@@ -93,7 +93,7 @@ namespace DistributedAuthSystem.Services
             return false;
         }
 
-        public bool DeleteClient(int id, int pin, out bool notFound)
+        public bool DeleteClient(string id, string pin, out bool notFound)
         {
             _lockSlim.EnterWriteLock();
             try
@@ -124,7 +124,7 @@ namespace DistributedAuthSystem.Services
             }
         }
 
-        public bool ChangeClientPin(int id, int currentPin, int newPin, out bool notFound)
+        public bool ChangeClientPin(string id, string currentPin, string newPin, out bool notFound)
         {
             _lockSlim.EnterWriteLock();
             try
@@ -157,7 +157,7 @@ namespace DistributedAuthSystem.Services
             }
         }
 
-        public bool AuthenticateClient(int id, int pin, out bool notFound)
+        public bool AuthenticateClient(string id, string pin, out bool notFound)
         {
             _lockSlim.EnterReadLock();
             try
@@ -183,7 +183,7 @@ namespace DistributedAuthSystem.Services
             }
         }
 
-        public OneTimePasswordList GetClientPassList(int id, int pin, out bool notFound)
+        public OneTimePasswordList GetClientPassList(string id, string pin, out bool notFound)
         {
             _lockSlim.EnterReadLock();
             try
@@ -210,7 +210,35 @@ namespace DistributedAuthSystem.Services
             }
         }
 
-        public bool AuthorizeOperation(int id, int pin, string oneTimePassword, out bool notFound)
+        public bool CheckCurrentPassword(string id, string pin, string oneTimePassword, out bool notFound)
+        {
+            _lockSlim.EnterReadLock();
+            try
+            {
+                Client client;
+                if (_repository.TryGetValue(id, out client))
+                {
+                    notFound = false;
+
+                    if (client.Pin == pin && client.CanAuthorizeOperation() &&
+                        client.CurrentActivePassword() == oneTimePassword)
+                    {
+                        return true;
+                    }
+
+                    return false;
+                }
+
+                notFound = true;
+                return false;
+            }
+            finally
+            {
+                _lockSlim.ExitReadLock();
+            }
+        }
+
+        public bool AuthorizeOperation(string id, string pin, string oneTimePassword, out bool notFound)
         {
             _lockSlim.EnterWriteLock();
             try
@@ -245,7 +273,7 @@ namespace DistributedAuthSystem.Services
             }
         }
 
-        public bool ActivateNewPassList(int id, int pin, string oneTimePassword, out bool notFound)
+        public bool ActivateNewPassList(string id, string pin, string oneTimePassword, out bool notFound)
         {
             _lockSlim.EnterWriteLock();
             try
@@ -299,7 +327,7 @@ namespace DistributedAuthSystem.Services
                 _serializer.Deserialize<Client>(operation.DataBefore);
             var clientAfter = operation.DataAfter == null ? null :
                 _serializer.Deserialize<Client>(operation.DataAfter);
-            int id = clientBefore == null ? clientAfter.Id : clientBefore.Id;
+            string id = clientBefore == null ? clientAfter.Id : clientBefore.Id;
             switch (operation.Type)
             {
                 case OperationType.ADD_CLIENT:
@@ -326,7 +354,7 @@ namespace DistributedAuthSystem.Services
                 _serializer.Deserialize<Client>(operation.DataBefore);
             var clientAfter = operation.DataAfter == null ? null :
                 _serializer.Deserialize<Client>(operation.DataAfter);
-            int id = clientBefore == null ? clientAfter.Id : clientBefore.Id;
+            string id = clientBefore == null ? clientAfter.Id : clientBefore.Id;
             switch (operation.Type)
             {
                 case OperationType.ADD_CLIENT:
