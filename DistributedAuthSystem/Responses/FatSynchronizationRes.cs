@@ -15,5 +15,7 @@ namespace DistributedAuthSystem.Responses
         public long SynchroTimestamp { get; set; }
 
         public Dictionary<string, long> SynchroTimes { get; set; }
+
+        public long RequestTimestamp { get; set; }
     }
 }

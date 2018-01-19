@@ -1,4 +1,5 @@
 ﻿using DistributedAuthSystem.Constants;
+using DistributedAuthSystem.Logger;
 using DistributedAuthSystem.Requests;
 using DistributedAuthSystem.Responses;
 using DistributedAuthSystem.Services;
@@ -76,10 +77,24 @@ namespace DistributedAuthSystem.Models
                 _synchronizationsRepository.UpdateSynchroTimes(fatResponse.SynchroTimes, fatResponse.SenderId,
                     fatResponse.SynchroTimestamp);
             }
+
+            if (fatResponse.Type == FatSynchroResult.CONFLICT ||
+                fatResponse.Type == FatSynchroResult.U2OLD)
+            {
+                if (fatResponse.RequestTimestamp > _serverInfoRepository.GetLastFatSynchro())
+                {
+                    var serverState = fatResponse.Type == FatSynchroResult.CONFLICT
+                        ? ServerState.IS_IN_CONFLICT : ServerState.IS_2OLD;
+
+                    _serverInfoRepository.SetServerState(serverState);
+                }
+            }
         }
 
         public void SendFatRequest(string serverId)
         {
+            long requestTimestamp = OperationsLog.GenerateTimestamp();
+
             Dictionary<string, long> synchroTimesCopy;
             _synchronizationsRepository.GetSynchroTimesCopy(out synchroTimesCopy);
 
@@ -87,7 +102,8 @@ namespace DistributedAuthSystem.Models
             {
                 SenderId = _serverInfoRepository.GetServerId(),
                 History = _clientsRepository.GetHistorySince(synchroTimesCopy[serverId]),
-                SynchroTimes = synchroTimesCopy
+                SynchroTimes = synchroTimesCopy,
+                RequestTimestamp = requestTimestamp
             };
 
             var data = _serializer.Serialize(fatRequest);

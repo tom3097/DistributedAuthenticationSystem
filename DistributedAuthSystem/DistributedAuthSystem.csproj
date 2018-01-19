@@ -207,6 +207,7 @@
     <Compile Include="Areas\HelpPage\XmlDocumentationProvider.cs" />
     <Compile Include="Constants\OperationType.cs" />
     <Compile Include="Constants\FatSynchroResult.cs" />
+    <Compile Include="Constants\ServerState.cs" />
     <Compile Include="Constants\ThinSynchroResult.cs" />
     <Compile Include="Controllers\ClientsController.cs" />
     <Compile Include="Controllers\ServerInfoController.cs" />

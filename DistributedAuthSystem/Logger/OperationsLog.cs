@@ -54,7 +54,7 @@ namespace DistributedAuthSystem.Logger
             }
         }
 
-        private static long GenerateTimestamp()
+        public static long GenerateTimestamp()
         {
             return Convert.ToInt64(DateTime.Now.ToUniversalTime().Subtract(
                 new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds);

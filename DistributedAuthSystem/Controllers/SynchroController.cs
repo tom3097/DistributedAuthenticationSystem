@@ -1,4 +1,5 @@
 ﻿using DistributedAuthSystem.Constants;
+using DistributedAuthSystem.Logger;
 using DistributedAuthSystem.Requests;
 using DistributedAuthSystem.Responses;
 using DistributedAuthSystem.Services;
@@ -38,6 +39,7 @@ namespace DistributedAuthSystem.Controllers
         [HttpPost]
         public HttpResponseMessage FatSynchronization([FromBody] FatSynchronizationReq request)
         {
+            long potLastFatSync = OperationsLog.GenerateTimestamp();
             long maxSyncTime;
             var result = _clientsRepository.UpdateHistory(request.History, out maxSyncTime);
             if (result == FatSynchroResult.FIXED)
@@ -51,6 +53,12 @@ namespace DistributedAuthSystem.Controllers
                     request.History.Last().Timestamp);
             }
 
+            if (result != FatSynchroResult.CONFLICT && result != FatSynchroResult.U2OLD)
+            {
+                _serverInfoRepository.SetLastFatSynchro(potLastFatSync);
+                _serverInfoRepository.SetServerState(ServerState.IS_OK);
+            }
+
             var statusCode = result == FatSynchroResult.CONFLICT || result == FatSynchroResult.U2OLD ?
                 HttpStatusCode.SeeOther : HttpStatusCode.OK;
 
@@ -62,7 +70,8 @@ namespace DistributedAuthSystem.Controllers
                 Type = result,
                 SynchroTimestamp = request.History.Last().Timestamp,
                 SenderId = _serverInfoRepository.GetServerId(),
-                SynchroTimes = synchroTimesCopy
+                SynchroTimes = synchroTimesCopy,
+                RequestTimestamp = request.RequestTimestamp
             };
 
             return Request.CreateResponse(HttpStatusCode.OK, fatResponse);

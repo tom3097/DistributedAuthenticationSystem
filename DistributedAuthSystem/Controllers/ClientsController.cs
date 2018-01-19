@@ -50,6 +50,11 @@ namespace DistributedAuthSystem.Controllers
         [HttpGet]
         public HttpResponseMessage GetAllClients()
         {
+            if (_serverInfoRepository.GetServerState() != ServerState.IS_OK)
+            {
+                return Request.CreateResponse(HttpStatusCode.ServiceUnavailable);
+            }
+
             var clients = _clientsRepository.GetAllClients();
             return Request.CreateResponse(HttpStatusCode.OK, clients);
         }
@@ -58,6 +63,11 @@ namespace DistributedAuthSystem.Controllers
         [HttpGet]
         public HttpResponseMessage GetSingleClient([FromUri] int id)
         {
+            if (_serverInfoRepository.GetServerState() != ServerState.IS_OK)
+            {
+                return Request.CreateResponse(HttpStatusCode.ServiceUnavailable);
+            }
+
             var client = _clientsRepository.GetSingleClient(id);
             var statusCode = client == null ? HttpStatusCode.NotFound : HttpStatusCode.OK;
             return Request.CreateResponse(statusCode, client);
@@ -67,6 +77,11 @@ namespace DistributedAuthSystem.Controllers
         [HttpPost]
         public HttpResponseMessage PostClient([FromBody] PostClientReq request)
         {
+            if (_serverInfoRepository.GetServerState() != ServerState.IS_OK)
+            {
+                return Request.CreateResponse(HttpStatusCode.ServiceUnavailable);
+            }
+
             var success = _clientsRepository.PostClient(request.Id, request.Pin);
             if (success)
             {
@@ -80,6 +95,11 @@ namespace DistributedAuthSystem.Controllers
         [HttpDelete]
         public HttpResponseMessage DeleteClient([FromUri] int id, [FromBody] int pin)
         {
+            if (_serverInfoRepository.GetServerState() != ServerState.IS_OK)
+            {
+                return Request.CreateResponse(HttpStatusCode.ServiceUnavailable);
+            }
+
             bool notFound;
             var success = _clientsRepository.DeleteClient(id, pin, out notFound);
             if (success)
@@ -94,6 +114,11 @@ namespace DistributedAuthSystem.Controllers
         [HttpPut]
         public HttpResponseMessage ChangeClientPin([FromUri] int id, [FromBody] ChangeClientPinReq request)
         {
+            if (_serverInfoRepository.GetServerState() != ServerState.IS_OK)
+            {
+                return Request.CreateResponse(HttpStatusCode.ServiceUnavailable);
+            }
+
             bool notFound;
             var success = _clientsRepository.ChangeClientPin(id, request.CurrentPin, request.NewPin, out notFound);
             if (success)
@@ -108,6 +133,11 @@ namespace DistributedAuthSystem.Controllers
         [HttpGet]
         public HttpResponseMessage AuthenticateClient([FromUri] int id, [FromBody] int pin)
         {
+            if (_serverInfoRepository.GetServerState() != ServerState.IS_OK)
+            {
+                return Request.CreateResponse(HttpStatusCode.ServiceUnavailable);
+            }
+
             bool notFound;
             var success = _clientsRepository.AuthenticateClient(id, pin, out notFound);
             var statusCode = success ? HttpStatusCode.OK : notFound ? HttpStatusCode.NotFound : HttpStatusCode.Unauthorized;
@@ -118,6 +148,11 @@ namespace DistributedAuthSystem.Controllers
         [HttpGet]
         public HttpResponseMessage GetClientPassList([FromUri] int id, [FromBody] int pin)
         {
+            if (_serverInfoRepository.GetServerState() != ServerState.IS_OK)
+            {
+                return Request.CreateResponse(HttpStatusCode.ServiceUnavailable);
+            }
+
             bool notFound;
             var passwordList = _clientsRepository.GetClientPassList(id, pin, out notFound);
             var statusCode = passwordList == null ? notFound ? HttpStatusCode.NotFound : HttpStatusCode.Unauthorized : HttpStatusCode.OK;
@@ -128,6 +163,11 @@ namespace DistributedAuthSystem.Controllers
         [HttpPut]
         public HttpResponseMessage AuthorizeOperation([FromUri] int id, [FromBody] AuthorizaOperationReq request)
         {
+            if (_serverInfoRepository.GetServerState() != ServerState.IS_OK)
+            {
+                return Request.CreateResponse(HttpStatusCode.ServiceUnavailable);
+            }
+
             bool notFound;
             var success = _clientsRepository.AuthorizeOperation(id, request.Pin, request.OneTimePassword, out notFound);
             if (success)
@@ -142,6 +182,11 @@ namespace DistributedAuthSystem.Controllers
         [HttpPut]
         public HttpResponseMessage ActivateNewPassList([FromUri] int id, [FromBody] ActivateNewPassListReq request)
         {
+            if (_serverInfoRepository.GetServerState() != ServerState.IS_OK)
+            {
+                return Request.CreateResponse(HttpStatusCode.ServiceUnavailable);
+            }
+
             bool notFound;
             var success = _clientsRepository.ActivateNewPassList(id, request.Pin, request.OneTimePassword, out notFound);
             if (success)
