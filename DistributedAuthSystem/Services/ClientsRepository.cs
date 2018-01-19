@@ -381,54 +381,90 @@ namespace DistributedAuthSystem.Services
             _lockSlim.EnterWriteLock();
             try
             {
+                /* Checking if history log is empty */
+                if (_operationsLog.IsEmpty())
+                {
+                    for (int i = 0; i < operations.Length; ++i)
+                    {
+                        UpdateMissingOperation(operations[i]);
+                    }
+                    _operationsLog.AddMissing(operations);
+
+                    return FatSynchroResult.OK;
+                }
+
+                /* Checking if last hash in operations and _operationsLog's history
+                 * are the same. If they are - servers are already synchronized */
                 if (_operationsLog.GetLastHash() == operations.Last().Hash)
                 {
                     return FatSynchroResult.ALREADY_SYNC;
                 }
 
-                var firstOpeTimestamp = operations.First().Timestamp;
-                var localOperations = _operationsLog.GetOperationsSince(firstOpeTimestamp - 1);
-
-                int minLength = operations.Length < localOperations.Length ? operations.Length : localOperations.Length;
-                for (int i = 0; i < minLength; ++i)
+                /* Checking if the first log in operations can be a continuation
+                 * of _operationsLog's history */
+                var firstOpe = operations.First();
+                Operation firstOpeBefore = _operationsLog.GetFirstOpeBefore(firstOpe.Timestamp);
+                if (firstOpeBefore != null)
                 {
-                    if (operations[i].Hash != localOperations[i].Hash)
+                    string continueHash = OperationsLog.GenerateHash(firstOpe.Type, firstOpe.DataBefore, firstOpe.DataAfter,
+                        firstOpeBefore.Hash);
+
+                    if (continueHash != firstOpe.Hash)
                     {
-                        if (operations[i].Timestamp < localOperations[i].Timestamp)
-                        {
-                            for (int j = i; j < localOperations.Length; ++j)
-                            {
-                                UndoOperation(localOperations[j]);
-                            }
-                            int counter = localOperations.Length - i;
-                            _operationsLog.RemoveFromTop(counter);
-
-                            for (int j = i; j < operations.Length; ++j)
-                            {
-                                UpdateMissingOperation(operations[j]);
-                            }
-                            var missingConf = new List<Operation>(operations).GetRange(i, operations.Length - i).ToArray();
-                            _operationsLog.AddMissing(missingConf);
-
-                            maxSynchroTime = i > 0 ? operations[i - 1].Timestamp : 0;
-
-                            return FatSynchroResult.FIXED;
-                        }
-
                         return FatSynchroResult.CONFLICT;
                     }
                 }
 
+                /* Checking if the following operations are matching each other */
+                var localOperations = _operationsLog.GetOperationsSince(firstOpe.Timestamp - 1);
+                int minLength = operations.Length < localOperations.Length ? operations.Length : localOperations.Length;
+                for (int i = 0; i < minLength; ++i)
+                {
+                    /* Not every operation matches */
+                    if (operations[i].Hash != localOperations[i].Hash)
+                    {
+                        /* Checking if sender is older than the receiver */
+                        if (operations[i].Timestamp > localOperations[i].Timestamp)
+                        {
+                            return FatSynchroResult.CONFLICT;
+                        }
+
+                        /* Receiver is older than sender */
+                        for (int j = i; j < localOperations.Length; ++j)
+                        {
+                            UndoOperation(localOperations[j]);
+                        }
+                        int counter = localOperations.Length - i;
+                        _operationsLog.RemoveFromTop(counter);
+
+                        for (int j = i; j < operations.Length; ++j)
+                        {
+                            UpdateMissingOperation(operations[j]);
+                        }
+                        var missingConf = new List<Operation>(operations).GetRange(i, operations.Length - i).ToArray();
+                        _operationsLog.AddMissing(missingConf);
+
+                        maxSynchroTime = i > 0 ? operations[i - 1].Timestamp : 0;
+
+                        return FatSynchroResult.FIXED;
+                    }
+                }
+
+                /* All operations match and their number is equal */
                 if (operations.Length == localOperations.Length)
                 {
                     return FatSynchroResult.OK;
                 }
 
+                /* All operations match and there are more operations in receiver
+                 * than in the sender */
                 if (localOperations.Length > operations.Length)
                 {
                     return FatSynchroResult.U2OLD;
                 }
 
+                /* All operations match and there are more operations in the sender
+                 * than in the receiver */
                 for (int i = minLength; i < operations.Length; ++i)
                 {
                     UpdateMissingOperation(operations[i]);

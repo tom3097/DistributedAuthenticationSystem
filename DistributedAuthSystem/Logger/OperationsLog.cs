@@ -38,7 +38,7 @@ namespace DistributedAuthSystem.Logger
                 var operation = new Operation
                 {
                     Timestamp = GenerateTimestamp(),
-                    Hash = GenerateHash(operationType, serialBefore, serialAfter),
+                    Hash = GenerateHash(operationType, serialBefore, serialAfter, _lastHash),
                     SequenceNumber = _history.Count,
                     Type = operationType,
                     DataBefore = serialBefore,
@@ -59,10 +59,11 @@ namespace DistributedAuthSystem.Logger
                 new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds);
         }
 
-        private string GenerateHash(OperationType operationType, string serialBefore, string serialAfter)
+        public static string GenerateHash(OperationType operationType, string serialBefore,
+            string serialAfter, string lastHash)
         {
             var plainText = String.Format("{0}{1}{2}{3}", operationType.ToString(), serialBefore,
-                serialAfter, _lastHash ?? "");
+                serialAfter, lastHash ?? "");
             byte[] data = Encoding.UTF8.GetBytes(plainText);
             using (HashAlgorithm sha = new SHA256Managed())
             {
@@ -85,6 +86,25 @@ namespace DistributedAuthSystem.Logger
                 }
 
                 return operations.ToArray();
+            }
+            finally
+            {
+                _lockSlim.ExitReadLock();
+            }
+        }
+
+        public Operation GetFirstOpeBefore(long timestamp)
+        {
+            _lockSlim.EnterReadLock();
+            try
+            {
+                int index = _history.Count - 1;
+                while (index >= 0 && _history[index].Timestamp >= timestamp)
+                {
+                    --index;
+                }
+
+                return index == -1 ? null : _history[index];
             }
             finally
             {
@@ -132,10 +152,31 @@ namespace DistributedAuthSystem.Logger
             }
         }
 
+        public bool IsEmpty()
+        {
+            _lockSlim.EnterReadLock();
+            try
+            {
+                return _history.Count == 0;
+            }
+            finally
+            {
+                _lockSlim.ExitReadLock();
+            }
+        }
+
         public void RemoveFromTop(int counter)
         {
-            int index = _history.Count - counter;
-            _history.RemoveRange(index, counter);
+            _lockSlim.EnterWriteLock();
+            try
+            {
+                int index = _history.Count - counter;
+                _history.RemoveRange(index, counter);
+            }
+            finally
+            {
+                _lockSlim.ExitWriteLock();
+            }
         }
 
         public void RemoveFromBottom(int counter)

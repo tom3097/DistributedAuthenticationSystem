@@ -1,4 +1,5 @@
 ﻿using DistributedAuthSystem.Models;
+using DistributedAuthSystem.Services;
 using FluentScheduler;
 using System.Web.Hosting;
 
@@ -10,6 +11,8 @@ namespace DistributedAuthSystem.Scheduler
 
         private readonly object _lock = new object();
 
+        private readonly IServerInfoRepository _serverInfoRepository;
+
         private readonly RequestsMaker _requestsMaker;
 
         private bool _shuttingDown;
@@ -18,8 +21,9 @@ namespace DistributedAuthSystem.Scheduler
 
         #region methods
 
-        public ThinRequestJob(RequestsMaker requestsMaker)
+        public ThinRequestJob(IServerInfoRepository serverInfoRepository, RequestsMaker requestsMaker)
         {
+            _serverInfoRepository = serverInfoRepository;
             _requestsMaker = requestsMaker;
 
             HostingEnvironment.RegisterObject(this);
@@ -34,7 +38,10 @@ namespace DistributedAuthSystem.Scheduler
                     if (_shuttingDown)
                         return;
 
-                    _requestsMaker.SendThinRequestsToAll();
+                    if (_serverInfoRepository.GetServerState() == Constants.ServerState.IS_OK)
+                    {
+                        _requestsMaker.SendThinRequestsToAll();
+                    }
                 }
             }
             finally
