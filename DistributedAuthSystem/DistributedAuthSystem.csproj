@@ -210,11 +210,10 @@
     <Compile Include="Constants\ServerState.cs" />
     <Compile Include="Constants\ThinSynchroResult.cs" />
     <Compile Include="Controllers\ClientsController.cs" />
+    <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Controllers\ServerInfoController.cs" />
     <Compile Include="Controllers\SynchroController.cs" />
-    <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Controllers\NeighboursController.cs" />
-    <Compile Include="Controllers\ValuesController.cs" />
     <Compile Include="Extensions\ClientExt.cs" />
     <Compile Include="Extensions\OneTimePasswordListExt.cs" />
     <Compile Include="Global.asax.cs">
