@@ -1,6 +1,7 @@
 ﻿using DistributedAuthSystem.Resolver;
 using DistributedAuthSystem.Services;
 using System.Web.Http;
+using System.Web.Http.Tracing;
 using Unity;
 using Unity.Lifetime;
 
@@ -20,6 +21,9 @@ namespace DistributedAuthSystem
 
             // Web API routes
             config.MapHttpAttributeRoutes();
+            SystemDiagnosticsTraceWriter traceWriter = config.EnableSystemDiagnosticsTracing();
+            traceWriter.IsVerbose = true;
+            traceWriter.MinimumLevel = TraceLevel.Debug;
 
             config.Routes.MapHttpRoute(
                 name: "DefaultApi",
