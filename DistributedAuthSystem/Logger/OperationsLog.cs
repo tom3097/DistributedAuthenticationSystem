@@ -192,11 +192,6 @@ namespace DistributedAuthSystem.Logger
             }
         }
 
-        public void RemoveFromBottom(int counter)
-        {
-            /* @toDo */
-        }
-
         #endregion
     }
 }

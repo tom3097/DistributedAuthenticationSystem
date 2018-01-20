@@ -20,7 +20,7 @@ namespace DistributedAuthSystem.Scheduler
             var requestsMaker = new RequestsMaker(clientRepository, neighbourRepository,
                 synchronizationRepository, serverInfoRepository);
             Schedule(() => new ThinRequestJob(serverInfoRepository, requestsMaker)).
-                ToRunNow().AndEvery(20).Seconds();
+                ToRunNow().AndEvery(5).Seconds();
         }
 
         #endregion

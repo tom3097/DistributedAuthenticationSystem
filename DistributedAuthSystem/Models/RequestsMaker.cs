@@ -28,9 +28,9 @@ namespace DistributedAuthSystem.Models
 
         private readonly JavaScriptSerializer _serializer;
 
-        private const int _asyncReqtimeout = 30000;
+        private const int _asyncReqtimeout = 10000;
 
-        private const int _checkPassTimeout = 30000;
+        private const int _checkPassTimeout = 10000;
 
         private const string _thinEndpoint = "private/synchro/thin";
 
@@ -248,8 +248,7 @@ namespace DistributedAuthSystem.Models
                 wreq.Method = "POST";
                 wreq.ContentType = "application/json";
                 wreq.ContentLength = bytes.Length;
-                /* uncomment in release build */
-                //wreq.Timeout = _checkPassTimeout;
+                wreq.Timeout = _checkPassTimeout;
 
                 using (var streamWriter = new StreamWriter(wreq.GetRequestStream()))
                 {

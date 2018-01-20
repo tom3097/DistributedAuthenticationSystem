@@ -66,6 +66,12 @@ namespace DistributedAuthSystem.Services
 
         public bool PostClient(string id, string pin)
         {
+            if (!(id.All(c => char.IsDigit(c)) && id.Length == 6 &&
+                pin.All(c => char.IsDigit(c)) && pin.Length == 4))
+            {
+                return false;
+            }
+
             _lockSlim.EnterWriteLock();
             try
             {
@@ -126,6 +132,12 @@ namespace DistributedAuthSystem.Services
 
         public bool ChangeClientPin(string id, string currentPin, string newPin, out bool notFound)
         {
+            if (!(newPin.All(c => char.IsDigit(c)) && newPin.Length == 4))
+            {
+                notFound = false;
+                return false;
+            }
+
             _lockSlim.EnterWriteLock();
             try
             {
@@ -480,12 +492,28 @@ namespace DistributedAuthSystem.Services
 
         public long GetLastOperationTsmp()
         {
-            return _operationsLog.GetLastTimestamp();
+            _lockSlim.EnterReadLock();
+            try
+            {
+                return _operationsLog.GetLastTimestamp();
+            }
+            finally
+            {
+                _lockSlim.ExitReadLock();
+            }
         }
 
         public string GetLastHash()
         {
-            return _operationsLog.GetLastHash();
+            _lockSlim.EnterReadLock();
+            try
+            {
+                return _operationsLog.GetLastHash();
+            }
+            finally
+            {
+                _lockSlim.ExitReadLock();
+            }
         }
 
         #endregion
