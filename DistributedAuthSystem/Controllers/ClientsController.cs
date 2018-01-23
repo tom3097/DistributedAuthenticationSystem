@@ -122,7 +122,7 @@ namespace DistributedAuthSystem.Controllers
         }
 
         [Route("{id}/authenticate")]
-        [HttpGet]
+        [HttpPost]
         public HttpResponseMessage AuthenticateClient([FromUri] string id, [FromBody] string pin)
         {
             if (_serverInfoRepository.GetServerState() != ServerState.IS_OK)
@@ -137,7 +137,7 @@ namespace DistributedAuthSystem.Controllers
         }
 
         [Route("{id}/passlist")]
-        [HttpGet]
+        [HttpPost]
         public HttpResponseMessage GetClientPassList([FromUri] string id, [FromBody] string pin)
         {
             if (_serverInfoRepository.GetServerState() != ServerState.IS_OK)
@@ -164,7 +164,7 @@ namespace DistributedAuthSystem.Controllers
         }
 
         [Route("{id}/authorize")]
-        [HttpPut]
+        [HttpPost]
         public HttpResponseMessage AuthorizeOperation([FromUri] string id, [FromBody] AuthPasswordReq request)
         {
             if (_serverInfoRepository.GetServerState() != ServerState.IS_OK)
@@ -198,7 +198,7 @@ namespace DistributedAuthSystem.Controllers
         }
 
         [Route("{id}/activatelist")]
-        [HttpPut]
+        [HttpPost]
         public HttpResponseMessage ActivateNewPassList([FromUri] string id, [FromBody] AuthPasswordReq request)
         {
             if (_serverInfoRepository.GetServerState() != ServerState.IS_OK)

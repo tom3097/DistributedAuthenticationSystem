@@ -9,7 +9,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Text;
-using System.Threading;
 using System.Web.Script.Serialization;
 
 namespace DistributedAuthSystem.Models
@@ -99,6 +98,39 @@ namespace DistributedAuthSystem.Models
             }
         }
 
+        private void GetFatRequestStreamCallback(IAsyncResult asynchronousResult)
+        {
+            StreamData streamData = (StreamData)asynchronousResult.AsyncState;
+
+            var request = streamData.Request;
+            var data = streamData.Data;
+
+            Stream postStream;
+
+            try
+            {
+                postStream = request.EndGetRequestStream(asynchronousResult);
+            }
+            catch (Exception)
+            {
+                return;
+            }
+
+            using (var streamWriter = new StreamWriter(postStream))
+            {
+                streamWriter.Write(data);
+                streamWriter.Flush();
+                streamWriter.Close();
+            }
+
+            var requestState = new RequestState
+            {
+                Request = request
+            };
+
+            IAsyncResult result = request.BeginGetResponse(new AsyncCallback(FatCallback), requestState);
+        }
+
         public void SendFatRequest(string serverId)
         {
             long requestTimestamp = OperationsLog.GenerateTimestamp();
@@ -118,26 +150,19 @@ namespace DistributedAuthSystem.Models
             byte[] bytes = Encoding.UTF8.GetBytes(data);
 
             var url = _neighboursRepository.GetSingleNeighbour(serverId).Url;
-            WebRequest wreq = WebRequest.Create(url + _fatEndpoint);
+            WebRequest wreq = WebRequest.Create("http://" + url + "/" + _fatEndpoint);
             wreq.Method = "POST";
             wreq.ContentType = "application/json";
             wreq.ContentLength = bytes.Length;
+            wreq.Timeout = _asyncReqtimeout;
 
-            using (var streamWriter = new StreamWriter(wreq.GetRequestStream()))
+            var streamData = new StreamData
             {
-                streamWriter.Write(data);
-                streamWriter.Flush();
-                streamWriter.Close();
-            }
-
-            var requestState = new RequestState
-            {
-                Request = wreq
+                Request = wreq,
+                Data = data
             };
 
-            IAsyncResult result = wreq.BeginGetResponse(new AsyncCallback(FatCallback), requestState);
-            ThreadPool.RegisterWaitForSingleObject(result.AsyncWaitHandle,
-                    new WaitOrTimerCallback(TimeoutCallback), wreq, _asyncReqtimeout, true);
+            wreq.BeginGetRequestStream(new AsyncCallback(GetFatRequestStreamCallback), streamData);
         }
 
         public void SendFatRequestsToAll()
@@ -175,6 +200,39 @@ namespace DistributedAuthSystem.Models
             SendFatRequest(thinResponse.SenderId);
         }
 
+        private void GetThinRequestStreamCallback(IAsyncResult asynchronousResult)
+        {
+            StreamData streamData = (StreamData)asynchronousResult.AsyncState;
+
+            var request = streamData.Request;
+            var data = streamData.Data;
+
+            Stream postStream;
+
+            try
+            {
+                postStream = request.EndGetRequestStream(asynchronousResult);
+            }
+            catch (Exception)
+            {
+                return;
+            }
+
+            using (var streamWriter = new StreamWriter(postStream))
+            {
+                streamWriter.Write(data);
+                streamWriter.Flush();
+                streamWriter.Close();
+            }
+
+            var requestState = new RequestState
+            {
+                Request = request
+            };
+
+            IAsyncResult result = request.BeginGetResponse(new AsyncCallback(ThinCallback), requestState);
+        }
+
         public void SendThinRequestsToAll()
         {
             var lastOperationTsmp = _clientsRepository.GetLastOperationTsmp();
@@ -201,26 +259,19 @@ namespace DistributedAuthSystem.Models
                     var data = _serializer.Serialize(thinRequest);
                     byte[] bytes = Encoding.UTF8.GetBytes(data);
 
-                    WebRequest wreq = WebRequest.Create(neigh.Url + _thinEndpoint);
+                    WebRequest wreq = WebRequest.Create("http://" + neigh.Url + "/" + _thinEndpoint);
                     wreq.Method = "POST";
                     wreq.ContentType = "application/json";
                     wreq.ContentLength = bytes.Length;
+                    wreq.Timeout = _asyncReqtimeout;
 
-                    using (var streamWriter = new StreamWriter(wreq.GetRequestStream()))
+                    var streamData = new StreamData
                     {
-                        streamWriter.Write(data);
-                        streamWriter.Flush();
-                        streamWriter.Close();
-                    }
-
-                    var requestState = new RequestState
-                    {
-                        Request = wreq
+                        Request = wreq,
+                        Data = data
                     };
 
-                    IAsyncResult result = wreq.BeginGetResponse(new AsyncCallback(ThinCallback), requestState);
-                    ThreadPool.RegisterWaitForSingleObject(result.AsyncWaitHandle,
-                                    new WaitOrTimerCallback(TimeoutCallback), wreq, _asyncReqtimeout, true);
+                    wreq.BeginGetRequestStream(new AsyncCallback(GetThinRequestStreamCallback), streamData);
                 }
             }
         }
@@ -244,7 +295,8 @@ namespace DistributedAuthSystem.Models
                 var data = _serializer.Serialize(authPasswordRequest);
                 byte[] bytes = Encoding.UTF8.GetBytes(data);
 
-                WebRequest wreq = WebRequest.Create(neigh.Url + String.Format(_checkPassEndpoint, id.ToString()));
+                WebRequest wreq = WebRequest.Create("http://" + neigh.Url + "/" +
+                    String.Format(_checkPassEndpoint, id.ToString()));
                 wreq.Method = "POST";
                 wreq.ContentType = "application/json";
                 wreq.ContentLength = bytes.Length;
@@ -257,11 +309,22 @@ namespace DistributedAuthSystem.Models
                     streamWriter.Close();
                 }
 
-                WebResponse response = wreq.GetResponse();
-                var statusCode = ((HttpWebResponse)response).StatusCode;
-                if (statusCode == HttpStatusCode.Unauthorized)
+                try
                 {
-                    return false;
+                    WebResponse response = wreq.GetResponse();
+                }
+                catch (WebException e)
+                {
+                    if (e.Status == WebExceptionStatus.ProtocolError)
+                    {
+                        var resp = (HttpWebResponse)e.Response;
+                        if (resp.StatusCode == HttpStatusCode.Unauthorized)
+                        {
+                            return false;
+                        }
+                    }
+
+                    throw e;
                 }
             }
 

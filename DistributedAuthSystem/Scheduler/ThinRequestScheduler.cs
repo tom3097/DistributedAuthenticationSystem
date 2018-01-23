@@ -19,8 +19,8 @@ namespace DistributedAuthSystem.Scheduler
             var serverInfoRepository = container.Resolve<IServerInfoRepository>();
             var requestsMaker = new RequestsMaker(clientRepository, neighbourRepository,
                 synchronizationRepository, serverInfoRepository);
-            Schedule(() => new ThinRequestJob(serverInfoRepository, requestsMaker)).
-                ToRunNow().AndEvery(5).Seconds();
+            //Schedule(() => new ThinRequestJob(serverInfoRepository, requestsMaker)).
+            //    ToRunNow().AndEvery(5).Seconds();
         }
 
         #endregion

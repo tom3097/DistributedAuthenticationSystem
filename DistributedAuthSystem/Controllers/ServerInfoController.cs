@@ -30,7 +30,7 @@ namespace DistributedAuthSystem.Controllers
         }
 
         [Route("{id}")]
-        [HttpPut]
+        [HttpPost]
         public HttpResponseMessage PutServerId([FromUri] string id)
         {
             var success = _serverInfoRepository.PutServerId(id);
